@@ -1,0 +1,4 @@
+*.zip
+finflow-online.js
+.DS_Store
+.netlify

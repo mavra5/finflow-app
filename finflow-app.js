@@ -391,10 +391,15 @@
   }
 
   function viewLedger() {
-    var tx = A.S.tx.slice().sort(function (a, b) { return (b.date > a.date ? 1 : (b.date < a.date ? -1 : 0)); });
+    var kind = A.ledgerKind || "all";
+    var all = A.S.tx.slice().sort(function (a, b) { return (b.date > a.date ? 1 : (b.date < a.date ? -1 : 0)); });
+    var tx = kind === "all" ? all : all.filter(function (t) { return t.kind === kind; });
     var rows = tx.map(function (t) {
-      return "<tr><td>" + new Date(t.date).toLocaleDateString("id-ID") + '</td><td><span class="m">' + esc(t.note || "-") + "</span></td><td>" + esc(t.cat) + '</td><td style="color:' + (t.kind === "inc" ? "var(--pos)" : "var(--neg)") + '">' + (t.kind === "inc" ? "Masuk" : "Keluar") + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(t.amount) + '</td><td style="text-align:right"><span class="mlink" data-del="' + t.id + '" style="color:var(--neg)">hapus</span></td></tr>';
+      var sdata = ((t.note || "") + " " + t.cat).toLowerCase();
+      return '<tr data-s="' + esc(sdata) + '"><td>' + new Date(t.date).toLocaleDateString("id-ID") + '</td><td><span class="m">' + esc(t.note || "-") + "</span></td><td>" + esc(t.cat) + '</td><td style="color:' + (t.kind === "inc" ? "var(--pos)" : "var(--neg)") + '">' + (t.kind === "inc" ? "Masuk" : "Keluar") + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(t.amount) + '</td><td style="text-align:right"><span class="mlink" data-del="' + t.id + '" style="color:var(--neg)">hapus</span></td></tr>';
     }).join("");
+    var lseg = '<div style="display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden">' + [["all", "Semua"], ["inc", "Masuk"], ["exp", "Keluar"]].map(function (x) { return '<span data-k="' + x[0] + '" style="padding:8px 13px;font-size:12px;cursor:pointer;border-right:1px solid var(--line);' + (x[0] === kind ? "background:var(--grad-gold);color:#1a1407;font-weight:700" : "color:var(--soft)") + '">' + x[1] + "</span>"; }).join("") + "</div>";
+    var ltoolbar = '<div style="padding:13px 18px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);flex-wrap:wrap"><input class="inp" id="ledgerQ" placeholder="Cari keterangan / kategori…" style="flex:1;min-width:180px;max-width:340px;padding:9px 13px">' + lseg + "</div>";
     var inner = '<div class="content"><div class="phead"><div><div class="pt">Buku Besar</div><div class="ps">Semua pergerakan kas perusahaan.</div></div><div class="acts"><button class="btn" id="expX"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Excel</button><button class="btn" id="expP"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> PDF</button><button class="btn pri" id="addBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Catat Pergerakan</button></div></div>' +
       '<div class="card">' + (tx.length ? '<table class="tbl"><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th>Jenis</th><th style="text-align:right">Jumlah</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" : '<div class="empty">Belum ada transaksi.</div>') + "</div></div>";
     shell(inner, "Buku Besar");

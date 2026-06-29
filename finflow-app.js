@@ -250,6 +250,7 @@
     { g: "Finance Hub" },
     { id: "ledger", t: "Buku Besar", f: null, ic: '<path d="M4 6h16M4 12h16M4 18h10"/>' },
     { id: "accounts", t: "Account Architecture", f: null, ic: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>' },
+    { id: "invoice", t: "Invoice", f: null, ic: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>' },
     { id: "pnl", t: "Laba Rugi", f: null, ic: '<path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/>' },
     { id: "insights", t: "Financial Insights", f: "ai_assistant", ic: '<path d="M3 3v18h18"/><path d="M7 12l3 3 7-8"/>' },
     { g: "Pajak" },

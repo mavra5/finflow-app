@@ -108,7 +108,7 @@
   var _splashStart = Date.now(), _splashHiding = false;
   function hideSplash() {
     if (_splashHiding) return; _splashHiding = true;
-    var wait = Math.max(0, 8500 - (Date.now() - _splashStart));
+    var wait = Math.max(0, 2300 - (Date.now() - _splashStart));
     setTimeout(function () {
       _splashGone = true; if (_splashIv) clearInterval(_splashIv);
       var s = document.getElementById("splash"); if (s) { s.style.opacity = 0; setTimeout(function () { s.style.display = "none"; }, 500); }

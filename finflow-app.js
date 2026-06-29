@@ -757,6 +757,34 @@
     }).catch(function () {});
   }
 
+  function viewClients() {
+    shell('<div class="content"><div class="phead"><div><div class="pt">Semua Klien</div><div class="ps">Memuat ringkasan…</div></div></div><div class="card"><div class="spin"></div></div></div>', "Semua Klien");
+    var ids = (A.companies || []).map(function (c) { return c.id; });
+    sb.from("company_state").select("company_id,data").in("company_id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]).then(function (r) {
+      var byId = {}; (r.data || []).forEach(function (x) { byId[x.company_id] = x.data || {}; });
+      var list = (A.companies || []).map(function (c) {
+        var s = byId[c.id] || {}, tx = s.tx || [], inc = 0, exp = 0; tx.forEach(function (t) { if (t.kind === "inc") inc += t.amount; else exp += t.amount; });
+        return { c: c, inc: inc, exp: exp, laba: inc - exp, n: tx.length };
+      });
+      renderClients(list);
+    }).catch(function () { renderClients([]); });
+  }
+  function renderClients(list) {
+    var totInc = 0, totLaba = 0; list.forEach(function (x) { totInc += x.inc; totLaba += x.laba; });
+    var rows = list.map(function (x) {
+      var active = x.c.id === A.company.id;
+      return '<tr style="cursor:pointer" data-co="' + x.c.id + '"><td><span class="m">' + esc(x.c.name) + "</span>" + (active ? ' <span style="color:var(--faint);font-size:11px">(aktif)</span>' : "") + "</td><td>" + esc(x.c.business_type || "") + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(x.inc) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--neg)">' + rp(x.exp) + '</td><td style="text-align:right;font-family:var(--mono);color:' + (x.laba >= 0 ? "var(--pos)" : "var(--neg)") + '">' + rp(x.laba) + '</td><td style="text-align:right">' + x.n + '</td><td><span class="pill ' + (x.laba >= 0 ? "pos" : "neg") + '">' + (x.laba >= 0 ? "Sehat" : "Rugi") + "</span></td></tr>";
+    }).join("");
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Semua Klien</div><div class="ps">Ringkasan ' + list.length + ' perusahaan/klien dalam satu layar.</div></div></div>' +
+      '<div class="kpis" style="grid-template-columns:repeat(3,1fr)">' +
+        kpi("Total Klien", String(list.length), '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>', "up", "perusahaan") +
+        kpi("Total Omzet", rpShort(totInc), '<path d="M3 17l5-5 4 4 8-8"/>', "up", "gabungan") +
+        kpi("Total Laba", rpShort(totLaba), '<circle cx="12" cy="9" r="6"/><path d="M9 14.5 7.5 22l4.5-2.5L16.5 22 15 14.5"/>', totLaba >= 0 ? "up" : "dn", "gabungan") +
+      "</div>" +
+      '<div class="card">' + (list.length ? '<table class="tbl"><thead><tr><th>Klien</th><th>Jenis</th><th style="text-align:right">Omzet</th><th style="text-align:right">Beban</th><th style="text-align:right">Laba</th><th style="text-align:right">Tx</th><th>Status</th></tr></thead><tbody>' + rows + "</tbody></table>" : '<div class="empty">Belum ada klien.</div>') + "</div></div>";
+    shell(inner, "Semua Klien");
+    root.querySelectorAll("[data-co]").forEach(function (e) { e.onclick = function () { var id = e.getAttribute("data-co"); if (id !== A.company.id) switchCompany(id); }; });
+  }
   function showReminders() {
     var dl = deadlines();
     var rows = dl.list.slice().sort(function (a, b) { return a.due - b.due; }).map(function (o) {

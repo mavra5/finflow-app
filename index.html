@@ -178,12 +178,12 @@ select.inp{appearance:none}
 @keyframes lflash{0%,17%,46%,100%{filter:drop-shadow(0 0 22px rgba(212,175,55,.45)) brightness(1)}2%{filter:drop-shadow(0 0 60px #fff) drop-shadow(0 0 26px #f7e08a) brightness(1.7)}7%{filter:drop-shadow(0 0 26px rgba(212,175,55,.6)) brightness(1.12)}48%{filter:drop-shadow(0 0 60px #fff) drop-shadow(0 0 26px #f7e08a) brightness(1.6)}53%{filter:drop-shadow(0 0 26px rgba(212,175,55,.6)) brightness(1.12)}}
 @keyframes scrFlash{0%,16%,46%,100%{opacity:0}2%{opacity:.9}6%{opacity:.1}48%{opacity:.8}52%{opacity:.1}}
 .bolts{position:absolute;top:-72px;left:50%;transform:translateX(-50%);width:300px;height:300px;overflow:visible;pointer-events:none;z-index:1}
-.bolt{fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px #f7e08a) drop-shadow(0 0 14px #d4af37);opacity:0;stroke-dasharray:640;stroke-dashoffset:640}
-.bolt.glow{stroke:#f7e08a;stroke-width:6;opacity:0;filter:blur(3px) drop-shadow(0 0 10px #d4af37)}
-.bolt.tl{animation:strike 2.6s linear 1s infinite}
-.bolt.tl.glow{animation:strikeG 2.6s linear 1s infinite}
-.bolt.br{animation:strike 2.6s linear 2.3s infinite}
-.bolt.br.glow{animation:strikeG 2.6s linear 2.3s infinite}
+.bolt{fill:none;stroke:#eaf4ff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #7cc0ff) drop-shadow(0 0 16px #2e74ff);opacity:0;stroke-dasharray:760;stroke-dashoffset:760}
+.bolt.glow{stroke:#9ccbff;stroke-width:8;opacity:0;filter:blur(3.5px) drop-shadow(0 0 14px #2e74ff)}
+.bolt.s1,.bolt.s1b{animation:strike 2.6s linear 1s infinite}
+.bolt.s1.glow,.bolt.s1b.glow{animation:strikeG 2.6s linear 1s infinite}
+.bolt.s2,.bolt.s2b{animation:strike 2.6s linear 2.3s infinite}
+.bolt.s2.glow,.bolt.s2b.glow{animation:strikeG 2.6s linear 2.3s infinite}
 @keyframes strike{0%{opacity:0;stroke-dashoffset:640}1.5%{opacity:1;stroke-dashoffset:0}5%{opacity:.2}7%{opacity:.95}12%{opacity:0;stroke-dashoffset:0}100%{opacity:0}}
 @keyframes strikeG{0%{opacity:0}2%{opacity:.7}7%{opacity:.15}10%{opacity:.5}13%{opacity:0}100%{opacity:0}}
 @media (max-width:1080px){.app{grid-template-columns:1fr}.side{position:fixed;left:0;top:0;z-index:50;transform:translateX(-100%);transition:.25s;width:248px}.side.open{transform:none}.menub{display:grid}.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.content{padding:22px 18px 60px}.phead .pt{font-size:30px}}

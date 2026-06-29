@@ -246,6 +246,7 @@
 
   /* ================= DATA / METRICS ================= */
   var CATS = { inc: ["Penjualan", "Jasa", "Pendapatan Lain"], exp: ["Pembelian", "Gaji", "Sewa", "Operasional", "Pajak", "Lain-lain"] };
+  function catsFor(kind) { var c = (A.S && A.S.cats && A.S.cats[kind]) || CATS[kind]; return c.length ? c : CATS[kind]; }
   function metrics() {
     var tx = A.S.tx, inc = 0, exp = 0; for (var i = 0; i < tx.length; i++) { if (tx[i].kind === "inc") inc += tx[i].amount; else exp += tx[i].amount; }
     return { inc: inc, exp: exp, laba: inc - exp, n: tx.length };

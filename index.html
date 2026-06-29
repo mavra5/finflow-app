@@ -193,6 +193,17 @@ select.inp{appearance:none}
 .bolt.s2.glow,.bolt.s2b.glow{animation:strikeG 2.6s linear 2.3s infinite}
 @keyframes strike{0%{opacity:0;stroke-dashoffset:640}1.5%{opacity:1;stroke-dashoffset:0}5%{opacity:.2}7%{opacity:.95}12%{opacity:0;stroke-dashoffset:0}100%{opacity:0}}
 @keyframes strikeG{0%{opacity:0}2%{opacity:.7}7%{opacity:.15}10%{opacity:.5}13%{opacity:0}100%{opacity:0}}
+@media print{
+  body{background:#fff}
+  body>*:not(#ov){display:none!important}
+  #cursor-glow,#splash{display:none!important}
+  #ov{position:static!important;background:#fff!important;backdrop-filter:none!important;padding:0!important;display:block!important}
+  .mcard{background:#fff!important;color:#111!important;border:none!important;box-shadow:none!important;width:100%!important;max-width:100%!important;animation:none!important;max-height:none!important}
+  .mcard *{color:#111!important}
+  .mcard .mx,.mcard .mbtn,.mbrand .fmark{display:none!important}
+  .mcard .tbl td,.mcard .tbl th{border-color:#ddd!important}
+  .mcard .pill{border:1px solid #111;background:#fff!important}
+}
 @media (max-width:1080px){.app{grid-template-columns:1fr}.side{position:fixed;left:0;top:0;z-index:50;transform:translateX(-100%);transition:.25s;width:248px}.side.open{transform:none}.menub{display:grid}.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.content{padding:22px 18px 60px}.phead .pt{font-size:30px}}
 </style>
 </head>

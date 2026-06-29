@@ -367,7 +367,7 @@
   function viewLedger() {
     var tx = A.S.tx.slice().sort(function (a, b) { return (b.date > a.date ? 1 : (b.date < a.date ? -1 : 0)); });
     var rows = tx.map(function (t) {
-      return "<tr><td>" + new Date(t.date).toLocaleDateString("id-ID") + '</td><td><span class="m">' + esc(t.note || "-") + "</span></td><td>" + esc(t.cat) + '</td><td style="color:' + (t.kind === "inc" ? "var(--pos)" : "var(--neg)") + '">' + (t.kind === "inc" ? "Masuk" : "Keluar") + '</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(t.amount) + '</td><td style="text-align:right"><span class="mlink" data-del="' + t.id + '" style="color:var(--neg)">hapus</span></td></tr>';
+      return "<tr><td>" + new Date(t.date).toLocaleDateString("id-ID") + '</td><td><span class="m">' + esc(t.note || "-") + "</span></td><td>" + esc(t.cat) + '</td><td style="color:' + (t.kind === "inc" ? "var(--pos)" : "var(--neg)") + '">' + (t.kind === "inc" ? "Masuk" : "Keluar") + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(t.amount) + '</td><td style="text-align:right"><span class="mlink" data-del="' + t.id + '" style="color:var(--neg)">hapus</span></td></tr>';
     }).join("");
     var inner = '<div class="content"><div class="phead"><div><div class="pt">Buku Besar</div><div class="ps">Semua pergerakan kas perusahaan.</div></div><div class="acts"><button class="btn pri" id="addBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Catat Pergerakan</button></div></div>' +
       '<div class="card">' + (tx.length ? '<table class="tbl"><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th>Jenis</th><th style="text-align:right">Jumlah</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" : '<div class="empty">Belum ada transaksi.</div>') + "</div></div>";
@@ -379,7 +379,7 @@
   function viewPnl() {
     var inc = {}, exp = {}, ti = 0, te = 0;
     A.S.tx.forEach(function (t) { if (t.kind === "inc") { inc[t.cat] = (inc[t.cat] || 0) + t.amount; ti += t.amount; } else { exp[t.cat] = (exp[t.cat] || 0) + t.amount; te += t.amount; } });
-    function rows(o) { return Object.keys(o).map(function (k) { return '<tr><td>' + esc(k) + '</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(o[k]) + "</td></tr>"; }).join("") || '<tr><td colspan="2" style="color:var(--faint)">—</td></tr>'; }
+    function rows(o) { return Object.keys(o).map(function (k) { return '<tr><td>' + esc(k) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(o[k]) + "</td></tr>"; }).join("") || '<tr><td colspan="2" style="color:var(--faint)">—</td></tr>'; }
     var inner = '<div class="content"><div class="phead"><div><div class="pt">Laporan Laba Rugi</div><div class="ps">Ringkasan pendapatan dan beban · ' + new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" }) + '.</div></div></div>' +
       '<div class="card" style="max-width:640px"><table class="tbl"><thead><tr><th>Pendapatan</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' + rows(inc) +
       '<tr><td class="m" style="color:var(--pos)">Total Pendapatan</td><td style="text-align:right;font-family:var(--mono);color:var(--pos)">' + rp(ti) + '</td></tr></tbody></table>' +
@@ -493,7 +493,7 @@
     var score = Math.round(pembukuan * 0.4 + kepatuhan * 0.3 + risiko * 0.3);
     var status = score >= 80 ? "Sehat" : (score >= 55 ? "Cukup" : "Perlu perhatian");
     var statusDesc = score >= 80 ? "Kepatuhan baik dengan sedikit risiko." : (score >= 55 ? "Beberapa hal perlu dirapikan." : "Segera lengkapi pembukuan & data pajak.");
-    function bar(lbl, v) { return '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--soft);margin:8px 0"><span style="width:80px">' + lbl + '</span><span style="flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><span style="display:block;height:100%;width:' + v + '%;background:var(--grad-gold);border-radius:3px"></span></span><span style="font-family:var(--mono);color:#fff;width:28px;text-align:right">' + v + "</span></div>"; }
+    function bar(lbl, v) { return '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--soft);margin:8px 0"><span style="width:80px">' + lbl + '</span><span style="flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><span style="display:block;height:100%;width:' + v + '%;background:var(--grad-gold);border-radius:3px"></span></span><span style="font-family:var(--mono);color:var(--val);width:28px;text-align:right">' + v + "</span></div>"; }
     var tips = [];
     if (!co.npwp) tips.push("Lengkapi NPWP perusahaan untuk skor kepatuhan lebih tinggi.");
     if (A.S.tx.length < 13) tips.push("Catat lebih banyak transaksi agar pembukuan makin lengkap.");
@@ -503,7 +503,7 @@
       '<div class="grid2"><div class="card"><div class="idx" style="padding:24px;display:flex;gap:24px;align-items:center;flex-wrap:wrap">' +
         '<div style="width:152px;height:152px;border-radius:50%;background:conic-gradient(var(--gold) 0 ' + score + '%, rgba(255,255,255,.06) ' + score + '% 100%);display:grid;place-items:center;position:relative;box-shadow:var(--glow);flex-shrink:0">' +
           '<div style="width:118px;height:118px;border-radius:50%;background:var(--bg-1);position:absolute"></div>' +
-          '<div style="position:relative;text-align:center"><div style="font-family:var(--disp);font-size:42px;color:#fff;line-height:1">' + score + '</div><div style="font-size:10px;color:var(--faint)">dari 100</div></div></div>' +
+          '<div style="position:relative;text-align:center"><div style="font-family:var(--disp);font-size:42px;color:var(--val);line-height:1">' + score + '</div><div style="font-size:10px;color:var(--faint)">dari 100</div></div></div>' +
         '<div style="flex:1;min-width:200px"><div style="font-size:17px;font-weight:700;color:var(--gold-lt)">' + status + '</div><div style="font-size:12.5px;color:var(--soft);margin:5px 0 12px">' + statusDesc + '</div>' +
           bar("Pembukuan", pembukuan) + bar("Kepatuhan", kepatuhan) + bar("Risiko", risiko) + "</div>" +
         "</div></div>" +
@@ -523,16 +523,16 @@
     }
     function rowsFrom(o, fallback) {
       var k = Object.keys(o); if (!k.length) return '<tr><td style="color:var(--faint)">' + fallback + '</td><td style="text-align:right;font-family:var(--mono);color:var(--faint)">' + rp(0) + "</td></tr>";
-      return k.map(function (c) { return '<tr><td><span class="m">' + esc(c) + '</span></td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(o[c]) + "</td></tr>"; }).join("");
+      return k.map(function (c) { return '<tr><td><span class="m">' + esc(c) + '</span></td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(o[c]) + "</td></tr>"; }).join("");
     }
-    var aset = '<tr><td><span class="m">Kas &amp; Setara Kas</span></td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(m.laba) + "</td></tr>";
+    var aset = '<tr><td><span class="m">Kas &amp; Setara Kas</span></td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(m.laba) + "</td></tr>";
     var inner = '<div class="content"><div class="phead"><div><div class="pt">Account Architecture</div><div class="ps">Struktur akun (COA) &amp; saldo dari pembukuan Anda — SAK EMKM.</div></div></div>' +
       '<div class="grid2" style="align-items:start"><div>' +
         section("Aset", "1-xxxx", aset, m.laba, "var(--gold-lt)") +
         section("Pendapatan", "4-xxxx", rowsFrom(incCats, "Belum ada pendapatan"), m.inc, "var(--pos)") +
       "</div><div>" +
         section("Beban", "5-xxxx", rowsFrom(expCats, "Belum ada beban"), m.exp, "var(--neg)") +
-        '<div class="card"><div class="card-h"><h3>Ekuitas</h3><span class="hint">3-xxxx</span></div><table class="tbl"><tbody><tr><td><span class="m">Laba Ditahan (berjalan)</span></td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(m.laba) + '</td></tr></tbody></table></div>' +
+        '<div class="card"><div class="card-h"><h3>Ekuitas</h3><span class="hint">3-xxxx</span></div><table class="tbl"><tbody><tr><td><span class="m">Laba Ditahan (berjalan)</span></td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(m.laba) + '</td></tr></tbody></table></div>' +
       "</div></div></div>";
     shell(inner, "Account Architecture");
   }
@@ -579,8 +579,8 @@
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px"><div><div style="font-family:var(--disp);font-size:22px">' + esc(co.name || "Perusahaan") + '</div><div style="color:var(--faint);font-size:11px">' + esc(co.npwp ? ("NPWP " + co.npwp) : "") + '</div></div><div style="text-align:right"><div style="font-family:var(--disp);font-size:20px;color:var(--gold-lt)">FAKTUR</div><div style="color:var(--soft);font-size:12px;font-family:var(--mono)">' + esc(i.no) + '</div><span class="pill ' + (i.status === "paid" ? "pos" : "warn") + '">' + (i.status === "paid" ? "LUNAS" : "BELUM DIBAYAR") + '</span></div></div>' +
       '<div style="border-top:1px solid var(--line);padding-top:12px;margin-bottom:10px;font-size:13px"><div style="color:var(--faint);font-size:11px">DITAGIHKAN KE</div><div style="font-weight:600">' + esc(i.client) + '</div><div style="color:var(--soft);font-size:12px;margin-top:4px">Tanggal ' + new Date(i.date).toLocaleDateString("id-ID") + " · Jatuh tempo " + new Date(i.due).toLocaleDateString("id-ID") + '</div></div>' +
       '<table class="tbl" style="font-size:13px"><thead><tr><th>Deskripsi</th><th style="text-align:right">Qty</th><th style="text-align:right">Harga</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' +
-        '<tr><td><span class="m">' + esc(i.desc) + '</span></td><td style="text-align:right">' + i.qty + '</td><td style="text-align:right;font-family:var(--mono)">' + rp(i.price) + '</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(sub) + "</td></tr>" +
-        (ppnAmt ? '<tr><td colspan="3" style="text-align:right;color:var(--soft)">PPN 11%</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(ppnAmt) + "</td></tr>" : "") +
+        '<tr><td><span class="m">' + esc(i.desc) + '</span></td><td style="text-align:right">' + i.qty + '</td><td style="text-align:right;font-family:var(--mono)">' + rp(i.price) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(sub) + "</td></tr>" +
+        (ppnAmt ? '<tr><td colspan="3" style="text-align:right;color:var(--soft)">PPN 11%</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(ppnAmt) + "</td></tr>" : "") +
         '<tr><td colspan="3" style="text-align:right" class="m">Total</td><td style="text-align:right;font-family:var(--disp);font-size:18px;color:var(--gold-lt)">' + rp(i.total) + "</td></tr>" +
       "</tbody></table>" +
       '<button class="mbtn pri" id="iv_pr" style="margin-top:14px">Cetak / Simpan PDF</button><button class="mbtn ghost" id="iv_cl">Tutup</button>');
@@ -613,7 +613,7 @@
     var totAll = 0, paid = 0; inv.forEach(function (i) { totAll += i.total; if (i.status === "paid") paid += i.total; });
     var rows = inv.map(function (i) {
       var due = new Date(i.due), late = i.status !== "paid" && due < new Date();
-      return "<tr><td><span class=\"m\">" + esc(i.no) + "</span></td><td>" + esc(i.client) + "</td><td>" + new Date(i.date).toLocaleDateString("id-ID") + '</td><td style="color:' + (late ? "var(--neg)" : "var(--soft)") + '">' + due.toLocaleDateString("id-ID") + '</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(i.total) + '</td><td><span class="pill ' + (i.status === "paid" ? "pos" : (late ? "neg" : "warn")) + '">' + (i.status === "paid" ? "Lunas" : (late ? "Terlambat" : "Belum bayar")) + "</span></td>" +
+      return "<tr><td><span class=\"m\">" + esc(i.no) + "</span></td><td>" + esc(i.client) + "</td><td>" + new Date(i.date).toLocaleDateString("id-ID") + '</td><td style="color:' + (late ? "var(--neg)" : "var(--soft)") + '">' + due.toLocaleDateString("id-ID") + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(i.total) + '</td><td><span class="pill ' + (i.status === "paid" ? "pos" : (late ? "neg" : "warn")) + '">' + (i.status === "paid" ? "Lunas" : (late ? "Terlambat" : "Belum bayar")) + "</span></td>" +
         '<td style="text-align:right;white-space:nowrap"><span class="mlink" data-vi="' + i.id + '">Lihat</span> · <span class="mlink" data-pay="' + i.id + '" style="color:' + (i.status === "paid" ? "var(--faint)" : "var(--pos)") + '">' + (i.status === "paid" ? "Batal" : "Lunas") + '</span> · <span class="mlink" data-di="' + i.id + '" style="color:var(--neg)">hapus</span></td></tr>';
     }).join("");
     var inner = '<div class="content"><div class="phead"><div><div class="pt">Invoice</div><div class="ps">Buat &amp; kelola faktur — tandai lunas, otomatis masuk pendapatan.</div></div><div class="acts"><button class="btn pri" id="addInv"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Buat Invoice</button></div></div>' +

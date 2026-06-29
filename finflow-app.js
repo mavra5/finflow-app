@@ -583,8 +583,9 @@
         (ppnAmt ? '<tr><td colspan="3" style="text-align:right;color:var(--soft)">PPN 11%</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(ppnAmt) + "</td></tr>" : "") +
         '<tr><td colspan="3" style="text-align:right" class="m">Total</td><td style="text-align:right;font-family:var(--disp);font-size:18px;color:var(--gold-lt)">' + rp(i.total) + "</td></tr>" +
       "</tbody></table>" +
-      '<button class="mbtn ghost" id="iv_cl" style="margin-top:14px">Tutup</button>');
+      '<button class="mbtn pri" id="iv_pr" style="margin-top:14px">Cetak / Simpan PDF</button><button class="mbtn ghost" id="iv_cl">Tutup</button>');
     $("#x").onclick = closeModal; $("#iv_cl").onclick = closeModal;
+    $("#iv_pr").onclick = function () { window.print(); };
   }
   function showAddInvoice() {
     modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Buat Invoice</div><div class="msub">Faktur ' + invNo() + '</div>' +

@@ -753,6 +753,21 @@
     }).catch(function () {});
   }
 
+  function showCategories() {
+    if (!A.S.cats) A.S.cats = { inc: CATS.inc.slice(), exp: CATS.exp.slice() };
+    function chips(kind) { return catsFor(kind).map(function (c, i) { return '<span data-rm="' + kind + "|" + i + '" style="cursor:pointer;background:rgba(212,175,55,.1);border:1px solid var(--line-gold);color:var(--gold-lt);padding:4px 10px;border-radius:20px;font-size:12px;display:inline-flex;gap:6px">' + esc(c) + " ✕</span>"; }).join(""); }
+    function body() { return '<div style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-top:6px">Pemasukan</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin:7px 0">' + chips("inc") + '</div><div style="display:flex;gap:8px"><input class="inp" id="ncI" placeholder="kategori pemasukan baru"><button class="mbtn ghost" id="adI" style="width:auto;margin:0;padding:0 16px">+</button></div>' + '<div style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;margin-top:14px">Pengeluaran</div><div style="display:flex;flex-wrap:wrap;gap:7px;margin:7px 0">' + chips("exp") + '</div><div style="display:flex;gap:8px"><input class="inp" id="ncE" placeholder="kategori pengeluaran baru"><button class="mbtn ghost" id="adE" style="width:auto;margin:0;padding:0 16px">+</button></div>'; }
+    function refresh() { var c = $("#catBody"); if (c) c.innerHTML = body(); wire(); }
+    function wire() {
+      document.querySelectorAll("[data-rm]").forEach(function (e) { e.onclick = function () { var p = e.getAttribute("data-rm").split("|"); A.S.cats[p[0]].splice(+p[1], 1); save(); refresh(); }; });
+      var ai = $("#adI"); if (ai) ai.onclick = function () { var v = $("#ncI").value.trim(); if (v && A.S.cats.inc.indexOf(v) < 0) { A.S.cats.inc.push(v); save(); refresh(); } };
+      var ae = $("#adE"); if (ae) ae.onclick = function () { var v = $("#ncE").value.trim(); if (v && A.S.cats.exp.indexOf(v) < 0) { A.S.cats.exp.push(v); save(); refresh(); } };
+    }
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Kelola Kategori</div><div class="msub">Atur daftar kategori pemasukan &amp; pengeluaran.</div><div id="catBody">' + body() + '</div><button class="mbtn pri" id="cat_done" style="margin-top:14px">Selesai</button>');
+    $("#x").onclick = function () { closeModal(); showAddTx(); };
+    $("#cat_done").onclick = function () { closeModal(); showAddTx(); };
+    wire();
+  }
   function parseCSV(text) {
     text = String(text || "").replace(/\r\n?/g, "\n").trim();
     var lines = text.split("\n").filter(function (l) { return l.trim(); });

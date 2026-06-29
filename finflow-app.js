@@ -117,7 +117,7 @@
     }, wait);
   }
   startSplashFX();
-  var LOGO = '<svg class="fmark" viewBox="0 0 100 124" aria-hidden="true"><path fill="url(#g)" d="M34 36 C34 20 46 11 67 11 C82 11 91 15 95 21 C85 23 73 22 63 26 C53 30 49 39 49 53 L49 110 C49 122 39 128 30 123 C34 114 34 104 34 92 Z"/><path fill="url(#g)" d="M44 58 C56 54 70 55 83 58 C79 68 68 73 55 73 L49 73 C46 73 44 67 44 62 Z"/></svg>';
+  var LOGO = '<img class="fmark" src="assets/finflow-logo-gold.png" alt="FinFlow" />';
 
   function defState() { return { v: 1, profile: { company: "", npwp: "", type: "jasa" }, tx: [] }; }
 

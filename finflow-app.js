@@ -358,6 +358,8 @@
     }).join("") || '<div class="empty">Belum ada transaksi. Klik <b>Catat Pergerakan</b> untuk memulai.</div>';
     // tax estimate (PPh Final UMKM 0.5%)
     var pphFinal = m.inc * 0.005;
+    var mthM = (function () { var now = new Date(), y = now.getFullYear(), mo = now.getMonth(), i = 0, e = 0; A.S.tx.forEach(function (t) { var d = new Date(t.date); if (d.getFullYear() === y && d.getMonth() === mo) { if (t.kind === "inc") i += t.amount; else e += t.amount; } }); return { inc: i, exp: e }; })();
+    function tgtBar(lbl, val, target, col) { target = target || 0; var pct = target ? Math.min(100, Math.round(val / target * 100)) : 0; return '<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px"><span style="color:var(--soft)">' + lbl + '</span><span style="font-family:var(--mono);color:var(--val)">' + rp(val) + (target ? " / " + rp(target) : "") + '</span></div><div style="height:9px;background:rgba(128,128,128,.2);border-radius:5px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:' + col + ';border-radius:5px;transition:width .6s cubic-bezier(.2,.8,.2,1)"></div></div><div style="font-size:11px;color:var(--faint);margin-top:5px">' + (target ? pct + "% tercapai bulan ini" : 'Belum diatur — klik "Atur target"') + "</div></div>"; }
     var inner = '<div class="content">' +
       '<div class="phead"><div><div class="pt">Selamat datang kembali, ' + esc(name) + '</div><div class="ps">Posisi keuangan ' + esc(A.company.name) + ' — ' + new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" }) + '.</div></div>' +
       '<div class="acts"><button class="btn pri" id="addBtn"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Catat Pergerakan</button></div></div>' +

@@ -505,8 +505,16 @@
     var prev = mm[mm.length - 2], cur = mm[mm.length - 1];
     var growth = (prev && prev.inc) ? ((cur.inc - prev.inc) / prev.inc * 100) : 0;
     var avg = m.n ? (m.inc + m.exp) / m.n : 0;
-    var maxNet = Math.max.apply(null, mm.map(function (x) { return Math.abs(x.net); }).concat([1]));
-    var bars = mm.map(function (d) { var h = Math.abs(d.net) / maxNet * 90; var pos = d.net >= 0; return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="height:100px;display:flex;align-items:flex-end"><div style="width:60%;height:' + h.toFixed(0) + 'px;border-radius:5px 5px 0 0;background:' + (pos ? "var(--grad-gold)" : "var(--neg)") + '"></div></div><div style="font-size:10px;color:var(--faint)">' + d.lab + "</div></div>"; }).join("");
+    var metric = A.insMetric || "net";
+    var vals = mm.map(function (d) { return metric === "inc" ? d.inc : (metric === "exp" ? (d.inc - d.net) : d.net); });
+    var maxV = Math.max.apply(null, vals.map(function (v) { return Math.abs(v); }).concat([1]));
+    var mLbl = { inc: "Pendapatan", net: "Laba Bersih", exp: "Beban" };
+    var bars = mm.map(function (d, i) {
+      var v = vals[i], h = Math.abs(v) / maxV * 90, pos = v >= 0;
+      var col = metric === "exp" ? "var(--neg)" : (metric === "inc" ? "var(--grad-gold)" : (pos ? "var(--grad-gold)" : "var(--neg)"));
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="height:100px;display:flex;align-items:flex-end;width:100%;justify-content:center" title="' + d.lab + ": " + rp(v) + '"><div style="width:62%;min-height:2px;height:' + h.toFixed(0) + 'px;border-radius:5px 5px 0 0;background:' + col + ';transition:height .45s cubic-bezier(.2,.8,.2,1)"></div></div><div style="font-size:10px;color:var(--faint)">' + d.lab + "</div></div>";
+    }).join("");
+    var seg = '<div style="margin-left:auto;display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden">' + ["inc", "net", "exp"].map(function (m) { return '<span data-m="' + m + '" style="padding:6px 11px;font-size:11px;cursor:pointer;border-right:1px solid var(--line);' + (m === metric ? "background:var(--grad-gold);color:#1a1407;font-weight:700" : "color:var(--soft)") + '">' + { inc: "Pendapatan", net: "Laba", exp: "Beban" }[m] + "</span>"; }).join("") + "</div>";
     var insights = [];
     insights.push(margin >= 20 ? "Margin laba sehat di " + margin.toFixed(1) + "% — pertahankan efisiensi beban." : (m.inc ? "Margin laba " + margin.toFixed(1) + "% — pertimbangkan menaikkan harga atau menekan beban." : "Belum ada pendapatan tercatat."));
     if (prev && prev.inc) insights.push(growth >= 0 ? "Pendapatan naik " + growth.toFixed(1) + "% dibanding bulan lalu." : "Pendapatan turun " + Math.abs(growth).toFixed(1) + "% — perlu perhatian.");

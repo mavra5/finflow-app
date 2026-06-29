@@ -398,6 +398,12 @@
       '<div class="card">' + (tx.length ? '<table class="tbl"><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th>Jenis</th><th style="text-align:right">Jumlah</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" : '<div class="empty">Belum ada transaksi.</div>') + "</div></div>";
     shell(inner, "Buku Besar");
     $("#addBtn").onclick = showAddTx;
+    $("#expP").onclick = printPage;
+    $("#expX").onclick = function () {
+      var rows = [["Tanggal", "Keterangan", "Kategori", "Jenis", "Jumlah"]];
+      A.S.tx.slice().sort(function (a, b) { return (a.date > b.date ? 1 : -1); }).forEach(function (t) { rows.push([t.date, t.note || "", t.cat, t.kind === "inc" ? "Masuk" : "Keluar", t.amount]); });
+      download("buku-besar-" + (A.company.name || "finflow") + ".csv", toCSV(rows), "text/csv;charset=utf-8");
+    };
     root.querySelectorAll("[data-del]").forEach(function (e) { e.onclick = function () { var id = e.getAttribute("data-del"); A.S.tx = A.S.tx.filter(function (t) { return t.id !== id; }); save(); render(); }; });
   }
 

@@ -117,7 +117,7 @@
     }, wait);
   }
   startSplashFX();
-  var LOGO = '<img class="fmark" src="assets/finflow-logo-gold.png" alt="FinFlow" />';
+  var LOGO = '<img class="fmark" src="assets/finflow-appicon-gold-dark.png" alt="FinFlow" />';
 
   function defState() { return { v: 1, profile: { company: "", npwp: "", type: "jasa" }, tx: [] }; }
 

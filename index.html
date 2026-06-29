@@ -172,7 +172,9 @@ select.inp{appearance:none}
 .plan .pr{font-family:var(--disp);font-size:24px;color:var(--gold-lt);margin:5px 0}.plan .pr small{font-size:13px;color:var(--faint);font-family:var(--ui)}
 .plan ul{list-style:none;margin:6px 0 0;color:var(--soft);font-size:12px;line-height:1.55}.plan li::before{content:"✓ ";color:var(--gold)}
 .tag{font-size:10px;font-weight:700;color:#1a1407;background:var(--grad-gold);padding:3px 8px;border-radius:20px}
-#splash{position:fixed;inset:0;background:radial-gradient(700px 520px at 50% 42%,rgba(46,86,164,.16),transparent 70%),#0a0a0d;display:grid;place-items:center;z-index:9999;transition:opacity .5s}
+#splash{position:fixed;inset:0;background:#0a0a0d;display:grid;place-items:center;z-index:9999;transition:opacity .5s}
+.flogo-single{width:130px;height:auto;opacity:0;animation:logoZoom 2s cubic-bezier(.2,.7,.2,1) forwards;filter:drop-shadow(0 0 24px rgba(212,175,55,.35))}
+@keyframes logoZoom{0%{opacity:0;transform:scale(.6)}18%{opacity:1}100%{opacity:1;transform:scale(1.2)}}
 .splash-logo{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px}
 .splash-logo .halo{position:absolute;top:-46px;left:50%;transform:translateX(-50%);width:270px;height:270px;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,.22),rgba(212,175,55,.06) 46%,transparent 68%);pointer-events:none;z-index:0;animation:halo 2.6s ease-in-out infinite}
 .splash-logo .halo::before{content:"";position:absolute;inset:26px;border-radius:50%;border:1px solid rgba(212,175,55,.28);box-shadow:0 0 50px rgba(212,175,55,.22) inset,0 0 34px rgba(212,175,55,.18);animation:spin 9s linear infinite}

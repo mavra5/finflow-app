@@ -9,6 +9,8 @@
     BANK: { bank: "BCA", no: "8715431617", name: "Mavra Guher" },
   };
   var sb = window.supabase.createClient(CFG.URL, CFG.KEY);
+  try { if (localStorage.getItem("ff_theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}
+  function toggleTheme() { var el = document.documentElement, light = el.getAttribute("data-theme") === "light"; if (light) { el.removeAttribute("data-theme"); } else { el.setAttribute("data-theme", "light"); } try { localStorage.setItem("ff_theme", light ? "dark" : "light"); } catch (e) {} }
   var A = { user: null, company: null, plan: null, features: [], plans: [], sub: null, S: null, view: "dash", busy: false, dirty: false };
   window.FF = A;
 

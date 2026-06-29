@@ -162,6 +162,11 @@ select.inp{appearance:none}
 .splash-logo .lockup{display:flex;align-items:center;gap:20px;position:relative;z-index:1}
 .fmark.big{position:relative;z-index:1;width:132px;height:auto;transform-origin:center;opacity:0;filter:drop-shadow(0 0 22px rgba(212,175,55,.45));animation:bob 2.6s ease-in-out infinite,lflash 2.6s linear 1s infinite,logoIn 1s ease both}
 @keyframes logoIn{0%{opacity:0}100%{opacity:1}}
+.flogo{position:relative;z-index:1;width:132px;height:165px;animation:bob 2.6s ease-in-out infinite}
+.flogo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0}
+.f-bot{clip-path:inset(47% 0 0 0);animation:reveal2 .6s ease 1s forwards}
+.f-top{clip-path:inset(0 0 50% 0);animation:reveal2 .6s ease 2.3s forwards}
+@keyframes reveal2{0%{opacity:0;filter:drop-shadow(0 0 4px #d4af37)}35%{opacity:1;filter:drop-shadow(0 0 46px #fff) brightness(1.9)}100%{opacity:1;filter:drop-shadow(0 0 18px rgba(212,175,55,.5)) brightness(1)}}
 .splash-wm{font-family:var(--disp);font-size:48px;font-weight:600;letter-spacing:.01em;color:var(--ink);z-index:1;line-height:1}
 .splash-wm span{color:var(--gold)}
 .splash-tg{font-size:10.5px;color:var(--faint);letter-spacing:.18em;text-transform:uppercase;margin-top:-8px;z-index:1}

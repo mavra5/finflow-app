@@ -315,7 +315,7 @@
       };
     });
     $("#mb").onclick = function () { $("#side").classList.toggle("open"); };
-    $("#meBtn").onclick = showAccount; $("#wsBtn").onclick = showAccount;
+    $("#meBtn").onclick = showAccount; $("#wsBtn").onclick = showCompanies;
     $("#addTop").onclick = showAddTx;
     var _th = $("#thBtn"); if (_th) _th.onclick = toggleTheme;
   }

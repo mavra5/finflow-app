@@ -71,11 +71,13 @@
     if (e.target.closest && e.target.closest(".btn,.ni,.ic-btn,.mbtn,.brand,.ws,.me,.footrow a,.mlink,[data-v],[data-go],[data-buy],.seg2 button,.mx,.menub")) uiClick();
   }, true);
 
-  // Venom welcome (device TTS, very low pitch + growl + laugh)
-  var _venomDone = false;
-  function venom() {
-    if (_venomDone) return; _venomDone = true;
-    try { var sl = document.querySelector(".splash-logo"); if (sl) sl.classList.add("zoom"); } catch (e) {}
+  // Venom welcome — dijamin berbunyi pada interaksi pertama (browser blokir audio sebelum gesture)
+  var _zoomed = false, _venomFired = false;
+  function venomZoom() { if (_zoomed) return; _zoomed = true; try { var sl = document.querySelector(".splash-logo"); if (sl) sl.classList.add("zoom"); } catch (e) {} }
+  function fireVenom() {
+    if (_venomFired) return; _venomFired = true;
+    venomZoom();
+    // bed growl rendah ala Venom
     try {
       if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
       if (_actx.state === "suspended") _actx.resume();
@@ -87,25 +89,27 @@
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
       o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(ctx.destination); o.start(t); o2.start(t); o.stop(t + 1.2); o2.stop(t + 1.2);
     } catch (e) {}
+    // suara (TTS pitch sangat rendah) + tawa
     try {
       var ss = window.speechSynthesis; if (!ss) return;
-      function pickDeep() { var vs = ss.getVoices() || []; return vs.filter(function (v) { return /male|daniel|fred|rishi|arthur|google uk english male|microsoft.*(david|mark|guy)/i.test(v.name); })[0] || vs.filter(function (v) { return /en/i.test(v.lang); })[0]; }
-      function say(text, after) { var u = new SpeechSynthesisUtterance(text); u.pitch = 0.1; u.rate = 0.82; u.volume = 1; var dv = pickDeep(); if (dv) u.voice = dv; if (after) u.onend = after; ss.speak(u); }
-      ss.cancel();
-      say("Welcome to FinFlow, my Lord. Are you ready to generate a billion dollars?", function () {
-        var l = new SpeechSynthesisUtterance("Ha, ha, ha, ha, ha, ha!"); l.pitch = 0.1; l.rate = 0.7; var dv = pickDeep(); if (dv) l.voice = dv; ss.speak(l);
-      });
+      var pick = function () { var vs = ss.getVoices() || []; return vs.filter(function (v) { return /daniel|google uk english male|microsoft.*(david|mark|guy)|fred|arthur|male/i.test(v.name); })[0] || vs.filter(function (v) { return /^en/i.test(v.lang); })[0]; };
+      var speak = function (text, pitch, rate, vol, after) { var u = new SpeechSynthesisUtterance(text); u.pitch = pitch; u.rate = rate; u.volume = vol; var dv = pick(); if (dv) u.voice = dv; if (after) u.onend = after; ss.speak(u); };
+      var said = false, go = function () {
+        if (said) return; said = true;
+        ss.cancel(); try { ss.resume(); } catch (e) {}
+        speak("Welcome to FinFlow. Are you ready to generate a billion dollars?", 0.2, 0.86, 0.9, function () {
+          setTimeout(function () { speak("Ha ha ha ha ha ha ha!", 0.1, 0.7, 0.85); }, 160);
+        });
+      };
+      if ((ss.getVoices() || []).length) go(); else { ss.onvoiceschanged = go; setTimeout(go, 500); }
     } catch (e) {}
   }
-
   function startSplashFX() {
     setTimeout(function () { if (_splashGone) return; thunder(); _splashIv = setInterval(function () { if (_splashGone) { clearInterval(_splashIv); return; } thunder(); }, 1300); }, 1050);
-    setTimeout(function () { venom(); }, 2800); // setelah sambaran petir, mulai zoom pelan
-    window.addEventListener("pointerdown", function unlock() {
-      try { if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)(); _actx.resume(); } catch (e) {}
-      if (!_venomDone) setTimeout(venom, 200); // fallback bila autoplay tadi diblokir
-      window.removeEventListener("pointerdown", unlock);
-    }, { once: true });
+    setTimeout(venomZoom, 2800);
+    setTimeout(function () { if (_actx && _actx.state === "running") fireVenom(); }, 2900); // kalau audio sudah unlocked, langsung main
+    var unlock = function () { try { if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)(); _actx.resume(); } catch (e) {} fireVenom(); window.removeEventListener("pointerdown", unlock); window.removeEventListener("keydown", unlock); };
+    window.addEventListener("pointerdown", unlock); window.addEventListener("keydown", unlock);
   }
   var _splashStart = Date.now(), _splashHiding = false;
   function hideSplash() {

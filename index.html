@@ -18,9 +18,23 @@
   --ink:#f6f4ed;--soft:#a4a199;--faint:#6c6a62;--dim:#4a4842;
   --line:rgba(255,255,255,0.07);--line-2:rgba(255,255,255,0.04);--line-gold:rgba(212,175,55,0.22);
   --pos:#62cf90;--pos-bg:rgba(98,207,144,0.12);--neg:#e0726a;--neg-bg:rgba(224,114,106,0.12);--warn:#e6b54f;--warn-bg:rgba(230,181,79,0.12);
-  --glow:0 0 24px rgba(212,175,55,0.30);
+  --glow:0 0 24px rgba(212,175,55,0.30);--val:#fff;
   --ui:"Schibsted Grotesk",system-ui,sans-serif;--disp:"Cormorant Garamond",Georgia,serif;--mono:"JetBrains Mono",monospace;
 }
+[data-theme="light"]{
+  --bg-0:#f3f0e8;--bg-1:#ffffff;--bg-2:#fbf9f3;--bg-3:#f0ece3;--side:#ffffff;
+  --ink:#1b1a17;--soft:#56534b;--faint:#8a867c;--dim:#b3aea3;
+  --line:rgba(0,0,0,0.09);--line-2:rgba(0,0,0,0.05);--line-gold:rgba(184,134,11,0.35);--val:#1b1a17;
+}
+[data-theme="light"] .card{background:linear-gradient(165deg,#ffffff,#fbf9f3);box-shadow:0 14px 34px -22px rgba(0,0,0,0.2)}
+[data-theme="light"] .mcard{background:linear-gradient(165deg,#ffffff,#fbf9f3)}
+[data-theme="light"] .top{background:rgba(255,255,255,0.85)}
+[data-theme="light"] .main{background:radial-gradient(900px 500px at 85% -8%,rgba(212,175,55,0.10),transparent 55%),var(--bg-0)}
+[data-theme="light"] .ni:hover{background:rgba(0,0,0,0.04)}
+[data-theme="light"] .ni.on{background:rgba(212,175,55,0.16);color:#7a5c12}
+[data-theme="light"] .ni.on svg{stroke:var(--gold-mid)}
+[data-theme="light"] .ic-btn,[data-theme="light"] .btn,[data-theme="light"] .inp{background:#fff}
+[data-theme="light"] .kpi .ico{background:rgba(212,175,55,0.14)}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--ui);color:var(--ink);background:var(--bg-0);font-size:14px;-webkit-font-smoothing:antialiased;}
 ::selection{background:rgba(212,175,55,0.25);}

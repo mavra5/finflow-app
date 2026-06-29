@@ -252,6 +252,7 @@
     { id: "calendar", t: "Compliance Calendar", f: "tax_calendar", ic: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>' },
     { id: "compliance", t: "Compliance Index", f: null, ic: '<path d="M12 3l8 4v5c0 5-3.5 7.5-8 9-4.5-1.5-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/>' },
     { g: "Kepatuhan" },
+    { id: "resolution", t: "Resolution Center", f: null, ic: '<path d="M12 16V4M7 9l5-5 5 5M5 20h14"/>' },
     { id: "coretax", t: "Coretax Hub", f: "tax_engine", ic: '<path d="M21 12a9 9 0 1 1-3-6.7M21 4v4h-4"/>' },
   ];
   function shell(inner, crumb) {

@@ -97,7 +97,7 @@
       var said = false, go = function () {
         if (said) return; said = true;
         ss.cancel(); try { ss.resume(); } catch (e) {}
-        speak("Welcome to FinFlow. Are you ready to generate a billion dollars?", 0.2, 0.86, 0.9, function () {
+        speak("Welcome to FinFlow. Are you ready to generate a billion dollars?", 0.1, 0.8, 0.92, function () {
           setTimeout(function () { speak("Ha ha ha ha ha ha ha!", 0.1, 0.7, 0.85); }, 160);
         });
       };

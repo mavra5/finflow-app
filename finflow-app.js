@@ -621,6 +621,16 @@
     shell(inner, "Resolution Center");
   }
 
+  function showTarget() {
+    var t = A.S.target || { income: 0, expense: 0 };
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Target Bulanan</div><div class="msub">Target pendapatan &amp; batas (budget) beban per bulan.</div>' +
+      '<div class="fld"><label>Target Pendapatan (Rp)</label><input class="inp" id="tg_i" inputmode="numeric" value="' + (t.income ? Number(t.income).toLocaleString("id-ID") : "") + '"></div>' +
+      '<div class="fld"><label>Budget Beban (Rp)</label><input class="inp" id="tg_e" inputmode="numeric" value="' + (t.expense ? Number(t.expense).toLocaleString("id-ID") : "") + '"></div>' +
+      '<button class="mbtn pri" id="tg_s">Simpan target</button>');
+    $("#x").onclick = closeModal;
+    ["tg_i", "tg_e"].forEach(function (id) { var el = $("#" + id); el.oninput = function () { var v = el.value.replace(/\D/g, ""); el.value = v ? Number(v).toLocaleString("id-ID") : ""; }; });
+    $("#tg_s").onclick = function () { A.S.target = { income: Number(($("#tg_i").value || "").replace(/\D/g, "")), expense: Number(($("#tg_e").value || "").replace(/\D/g, "")) }; save(); closeModal(); render(); };
+  }
   function invNo() {
     var n = (A.S.invoices.length + 1), d = new Date();
     return "INV/" + d.getFullYear() + "/" + ("0" + (d.getMonth() + 1)).slice(-2) + "/" + ("000" + n).slice(-4);

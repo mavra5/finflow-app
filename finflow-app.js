@@ -302,6 +302,7 @@
       '<div class="main"><div class="top">' +
         '<div class="menub" id="mb"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>' +
         '<div class="crumb"><b>' + esc(crumb) + "</b></div><div class=\"grow\"></div>" +
+        '<div class="ic-btn" id="bellBtn" title="Pengingat pajak"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>' + (function () { var n = deadlines().list.filter(function (o) { return o.days <= 7; }).length; return n ? '<span style="position:absolute;top:3px;right:4px;min-width:15px;height:15px;padding:0 3px;border-radius:8px;background:var(--neg);color:#fff;font-size:9px;font-weight:700;display:grid;place-items:center;line-height:1">' + n + "</span>" : ""; })() + "</div>" +
         '<div class="ic-btn" id="thBtn" title="Tema terang/gelap"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19"/></svg></div>' +
         '<div class="ic-btn" id="addTop" title="Catat transaksi"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></div>' +
       "</div>" + inner + "</div></div>";

@@ -267,6 +267,7 @@
   var NAV = [
     { g: "Utama" },
     { id: "dash", t: "Command Center", f: null, ic: '<path d="M3 9l9-7 9 7v11a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>' },
+    { id: "clients", t: "Semua Klien", f: null, ic: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
     { g: "Finance Hub" },
     { id: "ledger", t: "Buku Besar", f: null, ic: '<path d="M4 6h16M4 12h16M4 18h10"/>' },
     { id: "accounts", t: "Account Architecture", f: null, ic: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>' },

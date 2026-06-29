@@ -517,7 +517,7 @@
   }
 
   function viewInsights() {
-    var m = metrics(), mm = byMonth();
+    var m = metrics(), period = A.insPeriod || 6, mm = byMonthN(period);
     var margin = m.inc ? (m.laba / m.inc * 100) : 0, expRatio = m.inc ? (m.exp / m.inc * 100) : 0;
     var prev = mm[mm.length - 2], cur = mm[mm.length - 1];
     var growth = (prev && prev.inc) ? ((cur.inc - prev.inc) / prev.inc * 100) : 0;

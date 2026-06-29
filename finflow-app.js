@@ -406,10 +406,12 @@
     $("#addBtn").onclick = showAddTx;
     $("#expP").onclick = printPage;
     $("#expX").onclick = function () {
-      var rows = [["Tanggal", "Keterangan", "Kategori", "Jenis", "Jumlah"]];
-      A.S.tx.slice().sort(function (a, b) { return (a.date > b.date ? 1 : -1); }).forEach(function (t) { rows.push([t.date, t.note || "", t.cat, t.kind === "inc" ? "Masuk" : "Keluar", t.amount]); });
-      download("buku-besar-" + (A.company.name || "finflow") + ".csv", toCSV(rows), "text/csv;charset=utf-8");
+      var r = [["Tanggal", "Keterangan", "Kategori", "Jenis", "Jumlah"]];
+      tx.forEach(function (t) { r.push([t.date, t.note || "", t.cat, t.kind === "inc" ? "Masuk" : "Keluar", t.amount]); });
+      download("buku-besar-" + (A.company.name || "finflow") + ".csv", toCSV(r), "text/csv;charset=utf-8");
     };
+    root.querySelectorAll("[data-k]").forEach(function (e) { e.onclick = function () { A.ledgerKind = e.getAttribute("data-k"); render(); }; });
+    var lq = $("#ledgerQ"); if (lq) lq.oninput = function () { var v = lq.value.toLowerCase().trim(), trs = root.querySelectorAll("tbody tr[data-s]"), shown = 0; trs.forEach(function (tr) { var ok = !v || tr.getAttribute("data-s").indexOf(v) >= 0; tr.style.display = ok ? "" : "none"; if (ok) shown++; }); var none = $("#ledgerNone"); if (none) none.style.display = (trs.length && !shown) ? "" : "none"; };
     root.querySelectorAll("[data-del]").forEach(function (e) { e.onclick = function () { var id = e.getAttribute("data-del"); A.S.tx = A.S.tx.filter(function (t) { return t.id !== id; }); save(); render(); }; });
   }
 

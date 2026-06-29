@@ -123,7 +123,7 @@
   startSplashFX();
   var LOGO = '<img class="fmark" src="assets/finflow-logo-gold.png" alt="FinFlow" />';
 
-  function defState() { return { v: 1, profile: { company: "", npwp: "", type: "jasa" }, tx: [] }; }
+  function defState() { return { v: 1, profile: { company: "", npwp: "", type: "jasa" }, tx: [], invoices: [] }; }
 
   /* ---------- modal ---------- */
   function modal(html, wide) {

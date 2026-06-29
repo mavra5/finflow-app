@@ -810,6 +810,7 @@
     $("#x").onclick = closeModal;
     function setKind(k) { kind = k; $("#ki").className = k === "inc" ? "on inc" : ""; $("#ke").className = k === "exp" ? "on exp" : ""; $("#tx_cat").innerHTML = opts(); }
     $("#ki").onclick = function () { setKind("inc"); }; $("#ke").onclick = function () { setKind("exp"); };
+    $("#tx_mgcat").onclick = function () { closeModal(); showCategories(); };
     var amt = $("#tx_amt"); amt.oninput = function () { var v = amt.value.replace(/\D/g, ""); amt.value = v ? Number(v).toLocaleString("id-ID") : ""; };
     $("#tx_save").onclick = function () {
       var val = Number(($("#tx_amt").value || "").replace(/\D/g, ""));

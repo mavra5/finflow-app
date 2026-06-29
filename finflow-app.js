@@ -105,11 +105,8 @@
     } catch (e) {}
   }
   function startSplashFX() {
-    setTimeout(function () { if (_splashGone) return; thunder(); _splashIv = setInterval(function () { if (_splashGone) { clearInterval(_splashIv); return; } thunder(); }, 1300); }, 1050);
+    // Splash tanpa suara (Venom & petir dihapus atas permintaan). Hanya animasi visual + zoom.
     setTimeout(venomZoom, 2800);
-    setTimeout(function () { if (_actx && _actx.state === "running") fireVenom(); }, 2900); // kalau audio sudah unlocked, langsung main
-    var unlock = function () { try { if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)(); _actx.resume(); } catch (e) {} fireVenom(); window.removeEventListener("pointerdown", unlock); window.removeEventListener("keydown", unlock); };
-    window.addEventListener("pointerdown", unlock); window.addEventListener("keydown", unlock);
   }
   var _splashStart = Date.now(), _splashHiding = false;
   function hideSplash() {

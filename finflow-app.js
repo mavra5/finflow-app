@@ -299,6 +299,8 @@
     if (A.view === "coretax") return viewCoretax();
     if (A.view === "insights") return viewInsights();
     if (A.view === "compliance") return viewCompliance();
+    if (A.view === "accounts") return viewAccounts();
+    if (A.view === "resolution") return viewResolution();
     return viewSoon();
   }
 

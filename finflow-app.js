@@ -939,6 +939,7 @@
     $("#x").onclick = closeModal;
     $("#up").onclick = showPlans;
     $("#thm").onclick = function () { toggleTheme(); $("#thm").textContent = "Tema: " + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙"); };
+    $("#brand").onclick = function () { closeModal(); showBranding(); };
     $("#sy").onclick = function () { A.dirty = true; push().then(function () { $("#sy").textContent = "✓ Tersinkron"; }); };
     $("#out").onclick = function () { A.dirty = true; push().then(function () { return sb.auth.signOut(); }).then(function () { location.reload(); }); };
   }

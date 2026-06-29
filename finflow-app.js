@@ -44,14 +44,14 @@
       for (var i = 0; i < d.length; i++) { var p = i / d.length; d[i] = (Math.random() * 2 - 1) * Math.pow(1 - p, 1.7); }
       var src = ctx.createBufferSource(); src.buffer = buf;
       var lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.setValueAtTime(720, t0); lp.frequency.exponentialRampToValueAtTime(80, t0 + dur);
-      var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.8, t0 + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.3, t0 + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       src.connect(lp); lp.connect(g); g.connect(ctx.destination); src.start(t0); src.stop(t0 + dur);
       // sharp crack — short bright noise burst
       var cd = 0.22, cb = ctx.createBuffer(1, Math.floor(sr * cd), sr), cdd = cb.getChannelData(0);
       for (var j = 0; j < cdd.length; j++) { var q = j / cdd.length; cdd[j] = (Math.random() * 2 - 1) * Math.pow(1 - q, 4); }
       var cs = ctx.createBufferSource(); cs.buffer = cb;
       var hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1400;
-      var cg = ctx.createGain(); cg.gain.setValueAtTime(0.55, t0); cg.gain.exponentialRampToValueAtTime(0.0001, t0 + cd);
+      var cg = ctx.createGain(); cg.gain.setValueAtTime(0.2, t0); cg.gain.exponentialRampToValueAtTime(0.0001, t0 + cd);
       cs.connect(hp); hp.connect(cg); cg.connect(ctx.destination); cs.start(t0); cs.stop(t0 + cd);
     } catch (e) {}
   }

@@ -252,12 +252,13 @@
     var tx = A.S.tx, inc = 0, exp = 0; for (var i = 0; i < tx.length; i++) { if (tx[i].kind === "inc") inc += tx[i].amount; else exp += tx[i].amount; }
     return { inc: inc, exp: exp, laba: inc - exp, n: tx.length };
   }
-  function byMonth() {
+  function byMonthN(n) {
     var m = {}, now = new Date(), keys = [];
-    for (var i = 5; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); var k = d.getFullYear() + "-" + (d.getMonth() + 1); m[k] = { inc: 0, net: 0, lab: d.toLocaleDateString("id-ID", { month: "short" }) }; keys.push(k); }
-    A.S.tx.forEach(function (t) { var d = new Date(t.date); var k = d.getFullYear() + "-" + (d.getMonth() + 1); if (m[k]) { if (t.kind === "inc") { m[k].inc += t.amount; m[k].net += t.amount; } else m[k].net -= t.amount; } });
+    for (var i = n - 1; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); var k = d.getFullYear() + "-" + (d.getMonth() + 1); m[k] = { inc: 0, exp: 0, net: 0, lab: d.toLocaleDateString("id-ID", { month: "short" }), full: d.toLocaleDateString("id-ID", { month: "long", year: "numeric" }) }; keys.push(k); }
+    A.S.tx.forEach(function (t) { var d = new Date(t.date); var k = d.getFullYear() + "-" + (d.getMonth() + 1); if (m[k]) { if (t.kind === "inc") { m[k].inc += t.amount; m[k].net += t.amount; } else { m[k].exp += t.amount; m[k].net -= t.amount; } } });
     return keys.map(function (k) { return m[k]; });
   }
+  function byMonth() { return byMonthN(6); }
   function expByCat() {
     var m = {}; A.S.tx.forEach(function (t) { if (t.kind === "exp") m[t.cat] = (m[t.cat] || 0) + t.amount; });
     return Object.keys(m).map(function (k) { return { cat: k, v: m[k] }; }).sort(function (a, b) { return b.v - a.v; });

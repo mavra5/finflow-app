@@ -104,10 +104,7 @@
       cs.connect(hp); hp.connect(cg); cg.connect(ctx.destination); cs.start(t); cs.stop(t + cd);
     } catch (e) {}
   }
-  function startSplashFX() {
-    // Splash tanpa suara (Venom & petir dihapus atas permintaan). Hanya animasi visual + zoom.
-    setTimeout(venomZoom, 2800);
-  }
+  function startSplashFX() { /* splash = logo zoom-in murni (CSS), tanpa suara/petir/halo */ }
   var _splashStart = Date.now(), _splashHiding = false;
   function hideSplash() {
     if (_splashHiding) return; _splashHiding = true;

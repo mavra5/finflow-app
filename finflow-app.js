@@ -562,6 +562,73 @@
     shell(inner, "Resolution Center");
   }
 
+  function invNo() {
+    var n = (A.S.invoices.length + 1), d = new Date();
+    return "INV/" + d.getFullYear() + "/" + ("0" + (d.getMonth() + 1)).slice(-2) + "/" + ("000" + n).slice(-4);
+  }
+  function togglePaid(id) {
+    var i = A.S.invoices.filter(function (x) { return x.id === id; })[0]; if (!i) return;
+    if (i.status === "paid") { i.status = "unpaid"; }
+    else { i.status = "paid"; if (!i.posted) { A.S.tx.push({ id: uid(), date: new Date().toISOString().slice(0, 10), kind: "inc", cat: "Penjualan", note: "Invoice " + i.no + " — " + i.client, amount: i.total }); i.posted = true; } }
+    save(); render();
+  }
+  function invoiceDoc(id) {
+    var i = A.S.invoices.filter(function (x) { return x.id === id; })[0]; if (!i) return;
+    var co = A.company || {}, sub = i.qty * i.price, ppnAmt = i.ppn ? Math.round(sub * 0.11) : 0;
+    modal(MBRAND + '<button class="mx" id="x">×</button>' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px"><div><div style="font-family:var(--disp);font-size:22px">' + esc(co.name || "Perusahaan") + '</div><div style="color:var(--faint);font-size:11px">' + esc(co.npwp ? ("NPWP " + co.npwp) : "") + '</div></div><div style="text-align:right"><div style="font-family:var(--disp);font-size:20px;color:var(--gold-lt)">FAKTUR</div><div style="color:var(--soft);font-size:12px;font-family:var(--mono)">' + esc(i.no) + '</div><span class="pill ' + (i.status === "paid" ? "pos" : "warn") + '">' + (i.status === "paid" ? "LUNAS" : "BELUM DIBAYAR") + '</span></div></div>' +
+      '<div style="border-top:1px solid var(--line);padding-top:12px;margin-bottom:10px;font-size:13px"><div style="color:var(--faint);font-size:11px">DITAGIHKAN KE</div><div style="font-weight:600">' + esc(i.client) + '</div><div style="color:var(--soft);font-size:12px;margin-top:4px">Tanggal ' + new Date(i.date).toLocaleDateString("id-ID") + " · Jatuh tempo " + new Date(i.due).toLocaleDateString("id-ID") + '</div></div>' +
+      '<table class="tbl" style="font-size:13px"><thead><tr><th>Deskripsi</th><th style="text-align:right">Qty</th><th style="text-align:right">Harga</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' +
+        '<tr><td><span class="m">' + esc(i.desc) + '</span></td><td style="text-align:right">' + i.qty + '</td><td style="text-align:right;font-family:var(--mono)">' + rp(i.price) + '</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(sub) + "</td></tr>" +
+        (ppnAmt ? '<tr><td colspan="3" style="text-align:right;color:var(--soft)">PPN 11%</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(ppnAmt) + "</td></tr>" : "") +
+        '<tr><td colspan="3" style="text-align:right" class="m">Total</td><td style="text-align:right;font-family:var(--disp);font-size:18px;color:var(--gold-lt)">' + rp(i.total) + "</td></tr>" +
+      "</tbody></table>" +
+      '<button class="mbtn ghost" id="iv_cl" style="margin-top:14px">Tutup</button>');
+    $("#x").onclick = closeModal; $("#iv_cl").onclick = closeModal;
+  }
+  function showAddInvoice() {
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Buat Invoice</div><div class="msub">Faktur ' + invNo() + '</div>' +
+      '<div class="fld"><label>Klien</label><input class="inp" id="iv_c" placeholder="Nama klien / perusahaan"></div>' +
+      '<div class="fld"><label>Deskripsi</label><input class="inp" id="iv_d" placeholder="mis. Jasa konsultasi"></div>' +
+      '<div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Qty</label><input class="inp" id="iv_q" inputmode="numeric" value="1"></div><div class="fld" style="flex:2"><label>Harga satuan (Rp)</label><input class="inp" id="iv_p" inputmode="numeric" placeholder="0"></div></div>' +
+      '<div style="display:flex;gap:10px"><div class="fld" style="flex:1"><label>Tanggal</label><input class="inp" id="iv_dt" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div><div class="fld" style="flex:1"><label>Jatuh tempo</label><input class="inp" id="iv_du" type="date" value="' + new Date(Date.now() + 14 * 864e5).toISOString().slice(0, 10) + '"></div></div>' +
+      '<label style="display:flex;align-items:center;gap:8px;color:var(--soft);font-size:13px;margin:6px 0"><input type="checkbox" id="iv_ppn"> Tambah PPN 11%</label>' +
+      '<div class="mmsg" id="iv_m"></div><button class="mbtn pri" id="iv_s">Simpan invoice</button>');
+    $("#x").onclick = closeModal;
+    var p = $("#iv_p"); p.oninput = function () { var v = p.value.replace(/\D/g, ""); p.value = v ? Number(v).toLocaleString("id-ID") : ""; };
+    $("#iv_s").onclick = function () {
+      var qty = Number(($("#iv_q").value || "1").replace(/\D/g, "")) || 1;
+      var price = Number(($("#iv_p").value || "").replace(/\D/g, ""));
+      var m = $("#iv_m"); m.className = "mmsg err";
+      if (!$("#iv_c").value.trim()) { m.textContent = "Nama klien wajib diisi."; return; }
+      if (!price) { m.textContent = "Harga wajib diisi."; return; }
+      var ppn = $("#iv_ppn").checked, total = Math.round(qty * price * (ppn ? 1.11 : 1));
+      A.S.invoices.push({ id: uid(), no: invNo(), client: $("#iv_c").value.trim(), desc: $("#iv_d").value.trim() || "Layanan", qty: qty, price: price, ppn: ppn, total: total, date: $("#iv_dt").value, due: $("#iv_du").value, status: "unpaid", posted: false });
+      save(); closeModal(); render();
+    };
+  }
+  function viewInvoice() {
+    var inv = (A.S.invoices || []).slice().sort(function (a, b) { return (b.date > a.date ? 1 : -1); });
+    var totAll = 0, paid = 0; inv.forEach(function (i) { totAll += i.total; if (i.status === "paid") paid += i.total; });
+    var rows = inv.map(function (i) {
+      var due = new Date(i.due), late = i.status !== "paid" && due < new Date();
+      return "<tr><td><span class=\"m\">" + esc(i.no) + "</span></td><td>" + esc(i.client) + "</td><td>" + new Date(i.date).toLocaleDateString("id-ID") + '</td><td style="color:' + (late ? "var(--neg)" : "var(--soft)") + '">' + due.toLocaleDateString("id-ID") + '</td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(i.total) + '</td><td><span class="pill ' + (i.status === "paid" ? "pos" : (late ? "neg" : "warn")) + '">' + (i.status === "paid" ? "Lunas" : (late ? "Terlambat" : "Belum bayar")) + "</span></td>" +
+        '<td style="text-align:right;white-space:nowrap"><span class="mlink" data-vi="' + i.id + '">Lihat</span> · <span class="mlink" data-pay="' + i.id + '" style="color:' + (i.status === "paid" ? "var(--faint)" : "var(--pos)") + '">' + (i.status === "paid" ? "Batal" : "Lunas") + '</span> · <span class="mlink" data-di="' + i.id + '" style="color:var(--neg)">hapus</span></td></tr>';
+    }).join("");
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Invoice</div><div class="ps">Buat &amp; kelola faktur — tandai lunas, otomatis masuk pendapatan.</div></div><div class="acts"><button class="btn pri" id="addInv"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Buat Invoice</button></div></div>' +
+      '<div class="kpis" style="grid-template-columns:repeat(3,1fr)">' +
+        kpi("Total Tagihan", rpShort(totAll), '<rect x="4" y="3" width="16" height="18" rx="2"/>', "up", inv.length + " invoice") +
+        kpi("Sudah Lunas", rpShort(paid), '<path d="M20 6 9 17l-5-5"/>', "up", "diterima") +
+        kpi("Belum Dibayar", rpShort(totAll - paid), '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', (totAll - paid) > 0 ? "dn" : "up", "outstanding") +
+      "</div>" +
+      '<div class="card">' + (inv.length ? '<table class="tbl"><thead><tr><th>No</th><th>Klien</th><th>Tanggal</th><th>Jatuh tempo</th><th style="text-align:right">Total</th><th>Status</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>" : '<div class="empty">Belum ada invoice. Klik <b>Buat Invoice</b> untuk faktur pertama.</div>') + "</div></div>";
+    shell(inner, "Invoice");
+    $("#addInv").onclick = showAddInvoice;
+    root.querySelectorAll("[data-vi]").forEach(function (e) { e.onclick = function () { invoiceDoc(e.getAttribute("data-vi")); }; });
+    root.querySelectorAll("[data-pay]").forEach(function (e) { e.onclick = function () { togglePaid(e.getAttribute("data-pay")); }; });
+    root.querySelectorAll("[data-di]").forEach(function (e) { e.onclick = function () { var id = e.getAttribute("data-di"); A.S.invoices = A.S.invoices.filter(function (i) { return i.id !== id; }); save(); render(); }; });
+  }
+
   function viewSoon() {
     var nv = NAV.filter(function (x) { return x.id === A.view; })[0] || { t: "Segera" };
     shell('<div class="content"><div class="card"><div class="soon"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div><h3>' + esc(nv.t) + '</h3><p>Layar premium ini sedang dibangun mengikuti prototipe Hi-Fi FinFlow. Dashboard, Buku Besar, Laba Rugi &amp; Tax Command sudah aktif.</p></div></div></div>', nv.t);

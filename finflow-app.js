@@ -799,7 +799,7 @@
   /* ================= ADD TRANSACTION ================= */
   function showAddTx() {
     var kind = "inc";
-    function opts() { return CATS[kind].map(function (c) { return '<option>' + c + "</option>"; }).join(""); }
+    function opts() { return catsFor(kind).map(function (c) { return "<option>" + esc(c) + "</option>"; }).join(""); }
     modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Catat Pergerakan</div><div class="msub">Tambah pemasukan atau pengeluaran.</div>' +
       '<div class="seg2"><button class="on inc" data-k="inc" id="ki">Pemasukan</button><button data-k="exp" id="ke">Pengeluaran</button></div>' +
       '<div class="fld"><label>Jumlah (Rp)</label><input class="inp" id="tx_amt" inputmode="numeric" placeholder="0"></div>' +

@@ -405,6 +405,7 @@
       '<div class="card">' + ltoolbar + (tx.length ? '<table class="tbl"><thead><tr><th>Tanggal</th><th>Keterangan</th><th>Kategori</th><th>Jenis</th><th style="text-align:right">Jumlah</th><th></th></tr></thead><tbody>' + rows + '</tbody></table><div class="empty" id="ledgerNone" style="display:none">Tidak ada hasil pencarian.</div>' : '<div class="empty">Belum ada transaksi pada filter ini.</div>') + "</div></div>";
     shell(inner, "Buku Besar");
     $("#addBtn").onclick = showAddTx;
+    $("#impBtn").onclick = showImport;
     $("#expP").onclick = printPage;
     $("#expX").onclick = function () {
       var r = [["Tanggal", "Keterangan", "Kategori", "Jenis", "Jumlah"]];

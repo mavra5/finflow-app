@@ -751,6 +751,44 @@
     }).catch(function () {});
   }
 
+  function parseCSV(text) {
+    text = String(text || "").replace(/\r\n?/g, "\n").trim();
+    var lines = text.split("\n").filter(function (l) { return l.trim(); });
+    if (!lines.length) return [];
+    var delim = (lines[0].split(";").length > lines[0].split(",").length) ? ";" : (lines[0].split("\t").length > lines[0].split(",").length ? "\t" : ",");
+    return lines.map(function (line) {
+      var out = [], cur = "", q = false;
+      for (var i = 0; i < line.length; i++) { var c = line[i]; if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; } else { if (c === '"') q = true; else if (c === delim) { out.push(cur); cur = ""; } else cur += c; } }
+      out.push(cur); return out;
+    });
+  }
+  function parseAmt(s) { s = String(s == null ? "" : s).trim(); var neg = /^\(.*\)$/.test(s) || /-/.test(s.replace(/[^\d\-]/g, "")); s = s.replace(/[^\d.,]/g, ""); if (s.indexOf(",") > -1 && s.indexOf(".") > -1) s = s.replace(/\./g, "").replace(",", "."); else if (s.indexOf(",") > -1) s = s.replace(",", "."); var n = parseFloat(s); if (isNaN(n)) return 0; return neg ? -Math.abs(n) : n; }
+  function parseDate(s) { s = String(s || "").trim(); var m = s.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (m) return m[1] + "-" + ("0" + m[2]).slice(-2) + "-" + ("0" + m[3]).slice(-2); m = s.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/); if (m) { var y = m[3].length === 2 ? "20" + m[3] : m[3]; return y + "-" + ("0" + m[2]).slice(-2) + "-" + ("0" + m[1]).slice(-2); } var d = new Date(s); if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10); return new Date().toISOString().slice(0, 10); }
+  function showImport() {
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Impor Transaksi (CSV)</div><div class="msub">Unggah file .csv atau tempel datanya. Baris pertama = judul kolom.</div>' +
+      '<input type="file" id="im_f" accept=".csv,text/csv" class="inp" style="padding:9px">' +
+      '<textarea class="inp" id="im_t" placeholder="atau tempel CSV di sini…" style="min-height:84px;margin-top:8px;font-family:var(--mono);font-size:12px"></textarea>' +
+      '<button class="mbtn ghost" id="im_p">Proses</button><div id="im_map"></div><div class="mmsg" id="im_m"></div>');
+    $("#x").onclick = closeModal;
+    $("#im_f").onchange = function () { var f = this.files[0]; if (!f) return; var r = new FileReader(); r.onload = function () { $("#im_t").value = r.result; doProcess(); }; r.readAsText(f); };
+    $("#im_p").onclick = doProcess;
+    function doProcess() {
+      var rows = parseCSV($("#im_t").value), m = $("#im_m"); m.className = "mmsg err";
+      if (rows.length < 2) { m.textContent = "Data CSV minimal 2 baris (judul + isi)."; $("#im_map").innerHTML = ""; return; }
+      var head = rows[0], data = rows.slice(1);
+      function guess(re) { for (var i = 0; i < head.length; i++) if (re.test(head[i] || "")) return i; return -1; }
+      var gd = guess(/tang|date|tgl/i), gk = guess(/ket|desc|uraian|narasi|catatan|transaksi/i), ga = guess(/jumlah|amount|nominal|nilai|debit|kredit|mutasi/i);
+      function sel(id, def) { return '<select class="inp" id="' + id + '">' + head.map(function (h, i) { return '<option value="' + i + '"' + (i === def ? " selected" : "") + ">" + esc(h || ("Kolom " + (i + 1))) + "</option>"; }).join("") + "</select>"; }
+      m.textContent = "";
+      $("#im_map").innerHTML = '<div style="margin-top:10px"><div class="fld"><label>Kolom Tanggal</label>' + sel("im_d", gd < 0 ? 0 : gd) + '</div><div class="fld"><label>Kolom Keterangan</label>' + sel("im_k", gk < 0 ? 0 : gk) + '</div><div class="fld"><label>Kolom Jumlah</label>' + sel("im_a", ga < 0 ? 0 : ga) + '</div><div class="fld"><label>Jenis</label><select class="inp" id="im_kind"><option value="auto">Otomatis (− = keluar)</option><option value="inc">Semua Masuk</option><option value="exp">Semua Keluar</option></select></div><button class="mbtn pri" id="im_go">Impor ' + data.length + " baris</button></div>";
+      $("#im_go").onclick = function () {
+        var di = +$("#im_d").value, ki = +$("#im_k").value, ai = +$("#im_a").value, kd = $("#im_kind").value, n = 0;
+        data.forEach(function (r) { var amt = parseAmt(r[ai]); if (!amt) return; var k = kd === "auto" ? (amt < 0 ? "exp" : "inc") : kd; A.S.tx.push({ id: uid(), date: parseDate(r[di]), kind: k, cat: "Impor", note: (r[ki] || "").trim() || "Impor CSV", amount: Math.abs(amt) }); n++; });
+        save(); closeModal(); A.view = "ledger"; render();
+      };
+    }
+  }
+
   function viewSoon() {
     var nv = NAV.filter(function (x) { return x.id === A.view; })[0] || { t: "Segera" };
     shell('<div class="content"><div class="card"><div class="soon"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div><h3>' + esc(nv.t) + '</h3><p>Layar premium ini sedang dibangun mengikuti prototipe Hi-Fi FinFlow. Dashboard, Buku Besar, Laba Rugi &amp; Tax Command sudah aktif.</p></div></div></div>', nv.t);

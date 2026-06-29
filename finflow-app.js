@@ -506,6 +506,55 @@
     shell(inner, "Compliance Index");
   }
 
+  function viewAccounts() {
+    var m = metrics();
+    var incCats = {}, expCats = {};
+    A.S.tx.forEach(function (t) { if (t.kind === "inc") incCats[t.cat] = (incCats[t.cat] || 0) + t.amount; else expCats[t.cat] = (expCats[t.cat] || 0) + t.amount; });
+    function section(title, code, rows, total, color) {
+      return '<div class="card" style="margin-bottom:16px"><div class="card-h"><h3>' + title + '</h3><span class="hint">' + code + '</span></div>' +
+        '<table class="tbl"><tbody>' + rows + '<tr><td class="m" style="color:' + color + '">Total ' + title + '</td><td style="text-align:right;font-family:var(--mono);color:' + color + '">' + rp(total) + "</td></tr></tbody></table></div>";
+    }
+    function rowsFrom(o, fallback) {
+      var k = Object.keys(o); if (!k.length) return '<tr><td style="color:var(--faint)">' + fallback + '</td><td style="text-align:right;font-family:var(--mono);color:var(--faint)">' + rp(0) + "</td></tr>";
+      return k.map(function (c) { return '<tr><td><span class="m">' + esc(c) + '</span></td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(o[c]) + "</td></tr>"; }).join("");
+    }
+    var aset = '<tr><td><span class="m">Kas &amp; Setara Kas</span></td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(m.laba) + "</td></tr>";
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Account Architecture</div><div class="ps">Struktur akun (COA) &amp; saldo dari pembukuan Anda — SAK EMKM.</div></div></div>' +
+      '<div class="grid2" style="align-items:start"><div>' +
+        section("Aset", "1-xxxx", aset, m.laba, "var(--gold-lt)") +
+        section("Pendapatan", "4-xxxx", rowsFrom(incCats, "Belum ada pendapatan"), m.inc, "var(--pos)") +
+      "</div><div>" +
+        section("Beban", "5-xxxx", rowsFrom(expCats, "Belum ada beban"), m.exp, "var(--neg)") +
+        '<div class="card"><div class="card-h"><h3>Ekuitas</h3><span class="hint">3-xxxx</span></div><table class="tbl"><tbody><tr><td><span class="m">Laba Ditahan (berjalan)</span></td><td style="text-align:right;font-family:var(--mono);color:#fff">' + rp(m.laba) + '</td></tr></tbody></table></div>' +
+      "</div></div></div>";
+    shell(inner, "Account Architecture");
+  }
+
+  function viewResolution() {
+    var m = metrics(), co = A.company || {}, D = deadlines();
+    var issues = [];
+    if (!co.npwp) issues.push({ s: "warn", t: "NPWP belum diisi", d: "Lengkapi NPWP perusahaan untuk kesiapan pelaporan pajak.", a: "Isi di menu Akun / Coretax" });
+    if (m.inc && (m.exp / m.inc) > 0.8) issues.push({ s: "neg", t: "Beban sangat tinggi", d: "Beban " + Math.round(m.exp / m.inc * 100) + "% dari pendapatan — margin tertekan.", a: "Tinjau pengeluaran di Buku Besar" });
+    if (m.laba < 0) issues.push({ s: "neg", t: "Arus kas/laba negatif", d: "Pengeluaran melebihi pemasukan periode ini.", a: "Kurangi beban atau tingkatkan penjualan" });
+    if (A.S.tx.length < 5) issues.push({ s: "warn", t: "Pembukuan belum lengkap", d: "Baru " + A.S.tx.length + " transaksi tercatat.", a: "Catat transaksi rutin tiap hari" });
+    var nearest = D.list.slice().sort(function (a, b) { return a.due - b.due; })[0];
+    if (nearest && nearest.days <= 7) issues.push({ s: nearest.days <= 3 ? "neg" : "warn", t: "Tenggat pajak mendekat: " + nearest.t, d: "Jatuh tempo " + nearest.due.toLocaleDateString("id-ID", { day: "numeric", month: "long" }) + " (" + nearest.lbl + ").", a: "Siapkan di Compliance Calendar" });
+    var body;
+    if (!issues.length) {
+      body = '<div class="card"><div class="soon"><div class="ic" style="background:var(--pos-bg);border-color:var(--pos)"><svg viewBox="0 0 24 24" stroke="var(--pos)"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>Tidak ada masalah aktif</h3><p>Kepatuhan &amp; keuangan Anda sehat. Pertahankan pencatatan rutin dan pelaporan tepat waktu.</p></div></div>';
+    } else {
+      body = '<div class="card"><div class="card-h"><h3>' + issues.length + ' hal perlu tindakan</h3><span class="hint">early warning</span></div>' +
+        issues.map(function (x) { return '<div class="orow"><div class="oi exp" style="border-color:var(--' + (x.s === "neg" ? "neg" : "warn") + ');background:var(--' + (x.s === "neg" ? "neg" : "warn") + '-bg)"><svg viewBox="0 0 24 24" stroke="var(--' + (x.s === "neg" ? "neg" : "warn") + ')"><path d="M12 9v4M12 17v.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div><div style="flex:1"><div class="ot">' + esc(x.t) + '</div><div class="od">' + esc(x.d) + " · " + esc(x.a) + '</div></div><span class="pill ' + (x.s === "neg" ? "neg" : "warn") + '" style="margin-left:8px">' + (x.s === "neg" ? "Penting" : "Perhatian") + "</span></div>"; }).join("") + "</div>";
+    }
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Resolution Center</div><div class="ps">Deteksi dini masalah keuangan &amp; pajak — dengan langkah penyelesaian.</div></div></div>' +
+      '<div class="kpis" style="grid-template-columns:repeat(3,1fr)">' +
+        kpi("Masalah Aktif", String(issues.length), '<path d="M12 9v4M12 17v.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3z"/>', issues.length ? "dn" : "up", issues.length ? "perlu tindakan" : "semua aman") +
+        kpi("Tenggat Terdekat", (nearest ? nearest.lbl : "-"), '<rect x="3" y="4" width="18" height="17" rx="2"/>', nearest && nearest.days <= 3 ? "dn" : "up", nearest ? nearest.due.toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "") +
+        kpi("Margin Laba", (m.inc ? Math.round(m.laba / m.inc * 100) + "%" : "—"), '<path d="M3 17l5-5 4 4 8-8"/>', m.laba >= 0 ? "up" : "dn", "kesehatan") +
+      "</div>" + body + "</div>";
+    shell(inner, "Resolution Center");
+  }
+
   function viewSoon() {
     var nv = NAV.filter(function (x) { return x.id === A.view; })[0] || { t: "Segera" };
     shell('<div class="content"><div class="card"><div class="soon"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div><h3>' + esc(nv.t) + '</h3><p>Layar premium ini sedang dibangun mengikuti prototipe Hi-Fi FinFlow. Dashboard, Buku Besar, Laba Rugi &amp; Tax Command sudah aktif.</p></div></div></div>', nv.t);

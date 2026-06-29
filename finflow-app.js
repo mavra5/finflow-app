@@ -175,10 +175,27 @@
 
   /* ================= ONBOARDING ================= */
   function ensureCompany() {
-    return sb.from("memberships").select("company_id").limit(1).then(function (r) {
-      if (r.data && r.data.length) return sb.from("companies").select("*").eq("id", r.data[0].company_id).single().then(function (c) { A.company = c.data; return c.data; });
-      return showCreate();
+    return sb.from("memberships").select("company_id").then(function (r) {
+      var ids = (r.data || []).map(function (m) { return m.company_id; });
+      if (!ids.length) return showCreate();
+      return sb.from("companies").select("*").in("id", ids).then(function (c) {
+        A.companies = (c.data || []).sort(function (a, b) { return (a.created_at > b.created_at ? 1 : -1); });
+        var sel = null; try { sel = localStorage.getItem("ff_active_company"); } catch (e) {}
+        A.company = A.companies.filter(function (x) { return x.id === sel; })[0] || A.companies[0];
+        return A.company;
+      });
     });
+  }
+  function switchCompany(id) { try { localStorage.setItem("ff_active_company", id); } catch (e) {} location.reload(); }
+  function showCompanies() {
+    var rows = (A.companies || []).map(function (c) {
+      var active = c.id === A.company.id;
+      return '<div class="orow" data-co="' + c.id + '" style="cursor:pointer"><div class="oi" style="background:var(--grad-gold);border:none"><span style="color:#1a1407;font-weight:800;font-size:13px">' + esc((c.name || "?").charAt(0).toUpperCase()) + '</span></div><div style="flex:1"><div class="ot">' + esc(c.name) + '</div><div class="od">' + esc(c.business_type || "") + (c.npwp ? " · " + esc(c.npwp) : "") + '</div></div>' + (active ? '<span class="pill pos" style="margin-left:auto">Aktif</span>' : '<span class="mlink" style="margin-left:auto">Pilih</span>') + "</div>";
+    }).join("");
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Perusahaan / Klien</div><div class="msub">Pilih perusahaan aktif atau tambah klien baru.</div>' + rows + '<button class="mbtn pri" id="addCo" style="margin-top:12px">+ Tambah perusahaan / klien</button>', true);
+    $("#x").onclick = closeModal;
+    document.querySelectorAll("[data-co]").forEach(function (e) { e.onclick = function () { var id = e.getAttribute("data-co"); if (id !== A.company.id) switchCompany(id); else closeModal(); }; });
+    $("#addCo").onclick = function () { closeModal(); A.busy = false; showCreate().then(function (c) { try { localStorage.setItem("ff_active_company", c.id); } catch (e) {} location.reload(); }); };
   }
   function showCreate() {
     hideSplash();

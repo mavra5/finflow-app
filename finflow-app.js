@@ -83,31 +83,25 @@
   function fireVenom() {
     if (_venomFired) return; _venomFired = true;
     venomZoom();
-    // bed growl rendah ala Venom
+    bigThunder();
+  }
+  function bigThunder() {
     try {
       if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
       if (_actx.state === "suspended") _actx.resume();
-      var ctx = _actx, t = ctx.currentTime;
-      var o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain(), lp = ctx.createBiquadFilter();
-      o.type = "sawtooth"; o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(42, t + 1.1);
-      o2.type = "sine"; o2.frequency.setValueAtTime(34, t);
-      lp.type = "lowpass"; lp.frequency.setValueAtTime(360, t); lp.frequency.exponentialRampToValueAtTime(120, t + 1.1);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
-      o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(ctx.destination); o.start(t); o2.start(t); o.stop(t + 1.2); o2.stop(t + 1.2);
-    } catch (e) {}
-    // suara (TTS pitch sangat rendah) + tawa
-    try {
-      var ss = window.speechSynthesis; if (!ss) return;
-      var pick = function () { var vs = ss.getVoices() || []; return vs.filter(function (v) { return /daniel|google uk english male|microsoft.*(david|mark|guy)|fred|arthur|male/i.test(v.name); })[0] || vs.filter(function (v) { return /^en/i.test(v.lang); })[0]; };
-      var speak = function (text, pitch, rate, vol, after) { var u = new SpeechSynthesisUtterance(text); u.pitch = pitch; u.rate = rate; u.volume = vol; var dv = pick(); if (dv) u.voice = dv; if (after) u.onend = after; ss.speak(u); };
-      var said = false, go = function () {
-        if (said) return; said = true;
-        ss.cancel(); try { ss.resume(); } catch (e) {}
-        speak("Welcome to FinFlow. Are you ready to generate a billion dollars?", 0.1, 0.8, 0.92, function () {
-          setTimeout(function () { speak("Ha ha ha ha ha ha ha!", 0.1, 0.7, 0.85); }, 160);
-        });
-      };
-      if ((ss.getVoices() || []).length) go(); else { ss.onvoiceschanged = go; setTimeout(go, 500); }
+      var ctx = _actx, t = ctx.currentTime, sr = ctx.sampleRate;
+      var dur = 2.3, buf = ctx.createBuffer(1, Math.floor(sr * dur), sr), d = buf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) { var p = i / d.length; d[i] = (Math.random() * 2 - 1) * Math.pow(1 - p, 1.35); }
+      var src = ctx.createBufferSource(); src.buffer = buf;
+      var lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.setValueAtTime(950, t); lp.frequency.exponentialRampToValueAtTime(60, t + dur);
+      var g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.6, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(lp); lp.connect(g); g.connect(ctx.destination); src.start(t); src.stop(t + dur);
+      var cd = 0.32, cb = ctx.createBuffer(1, Math.floor(sr * cd), sr), cdd = cb.getChannelData(0);
+      for (var j = 0; j < cdd.length; j++) { var q = j / cdd.length; cdd[j] = (Math.random() * 2 - 1) * Math.pow(1 - q, 3); }
+      var cs = ctx.createBufferSource(); cs.buffer = cb;
+      var hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 1100;
+      var cg = ctx.createGain(); cg.gain.setValueAtTime(0.42, t); cg.gain.exponentialRampToValueAtTime(0.0001, t + cd);
+      cs.connect(hp); hp.connect(cg); cg.connect(ctx.destination); cs.start(t); cs.stop(t + cd);
     } catch (e) {}
   }
   function startSplashFX() {

@@ -702,6 +702,60 @@
     root.querySelectorAll("[data-di]").forEach(function (e) { e.onclick = function () { var id = e.getAttribute("data-di"); A.S.invoices = A.S.invoices.filter(function (i) { return i.id !== id; }); save(); render(); }; });
   }
 
+  function viewTeam() {
+    shell('<div class="content"><div class="phead"><div><div class="pt">Anggota Tim</div><div class="ps">Memuat…</div></div></div><div class="card"><div class="spin"></div></div></div>', "Anggota Tim");
+    Promise.all([
+      sb.from("memberships").select("user_id, role").eq("company_id", A.company.id),
+      sb.from("company_invites").select("*").eq("company_id", A.company.id),
+    ]).then(function (res) {
+      var mems = res[0].data || [], invites = res[1].data || [], uids = mems.map(function (m) { return m.user_id; });
+      sb.from("profiles").select("id,email,full_name").in("id", uids.length ? uids : ["00000000-0000-0000-0000-000000000000"]).then(function (p) {
+        var profs = {}; (p.data || []).forEach(function (x) { profs[x.id] = x; });
+        renderTeam(mems, invites, profs);
+      });
+    }).catch(function () { renderTeam([], [], {}); });
+  }
+  function renderTeam(mems, invites, profs) {
+    var myRole = (mems.filter(function (m) { return m.user_id === A.user.id; })[0] || {}).role || "staff";
+    var isAdmin = myRole === "owner" || myRole === "admin";
+    var memRows = mems.map(function (m) {
+      var p = profs[m.user_id] || {}, nm = p.full_name || p.email || "Anggota", av = nm.charAt(0).toUpperCase();
+      return '<div class="orow"><div class="oi" style="background:var(--grad-gold);border:none"><span style="color:#1a1407;font-weight:800">' + esc(av) + '</span></div><div style="flex:1"><div class="ot">' + esc(nm) + (m.user_id === A.user.id ? ' <span style="color:var(--faint);font-size:11px">(Anda)</span>' : "") + '</div><div class="od">' + esc(p.email || "") + '</div></div><span class="pill ' + (m.role === "owner" ? "pos" : "warn") + '">' + esc(m.role) + "</span>" + ((isAdmin && m.role !== "owner" && m.user_id !== A.user.id) ? ' <span class="mlink" data-rm="' + m.user_id + '" style="color:var(--neg);margin-left:8px">keluarkan</span>' : "") + "</div>";
+    }).join("");
+    var invRows = invites.map(function (iv) { return '<div class="orow"><div class="oi exp"><svg viewBox="0 0 24 24" stroke="var(--warn)" fill="none"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div><div style="flex:1"><div class="ot">' + esc(iv.email) + '</div><div class="od">Menunggu bergabung · peran ' + esc(iv.role) + '</div></div>' + (isAdmin ? '<span class="mlink" data-cancel="' + iv.id + '" style="color:var(--neg)">batalkan</span>' : "") + "</div>"; }).join("");
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Anggota Tim</div><div class="ps">Kelola akses ' + esc(A.company.name) + '.</div></div>' + (isAdmin ? '<div class="acts"><button class="btn pri" id="invBtn"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg> Undang anggota</button></div>' : "") + "</div>" +
+      '<div class="card"><div class="card-h"><h3>Anggota (' + mems.length + ")</h3></div>" + (memRows || '<div class="empty">—</div>') + "</div>" +
+      (invites.length ? '<div class="card" style="margin-top:16px"><div class="card-h"><h3>Undangan tertunda (' + invites.length + ")</h3></div>" + invRows + "</div>" : "") +
+      (isAdmin ? "" : '<div class="card" style="margin-top:16px"><div style="padding:16px 20px;color:var(--soft);font-size:13px">Hanya owner/admin yang dapat mengundang atau mengeluarkan anggota.</div></div>') + "</div>";
+    shell(inner, "Anggota Tim");
+    var ib = $("#invBtn"); if (ib) ib.onclick = showInvite;
+    root.querySelectorAll("[data-cancel]").forEach(function (e) { e.onclick = function () { sb.from("company_invites").delete().eq("id", e.getAttribute("data-cancel")).then(viewTeam); }; });
+    root.querySelectorAll("[data-rm]").forEach(function (e) { e.onclick = function () { sb.from("memberships").delete().eq("company_id", A.company.id).eq("user_id", e.getAttribute("data-rm")).then(viewTeam); }; });
+  }
+  function showInvite() {
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Undang Anggota</div><div class="msub">Mereka otomatis bergabung saat login dengan email ini.</div>' +
+      '<div class="fld"><label>Email</label><input class="inp" id="in_e" type="email" placeholder="nama@email.com"></div>' +
+      '<div class="fld"><label>Peran</label><select class="inp" id="in_r"><option value="staff">Staff</option><option value="admin">Admin</option><option value="viewer">Viewer (lihat saja)</option></select></div>' +
+      '<div class="mmsg" id="in_m"></div><button class="mbtn pri" id="in_s">Kirim undangan</button>');
+    $("#x").onclick = closeModal;
+    $("#in_s").onclick = function () {
+      var email = ($("#in_e").value || "").trim().toLowerCase(), m = $("#in_m"); m.className = "mmsg err";
+      if (!/.+@.+\..+/.test(email)) { m.textContent = "Email tidak valid."; return; }
+      sb.from("company_invites").insert({ company_id: A.company.id, email: email, role: $("#in_r").value, created_by: A.user.id }).then(function (r) {
+        if (r.error) { m.textContent = r.error.message; return; }
+        m.className = "mmsg ok"; m.textContent = "Undangan terkirim. Mereka bergabung otomatis saat login.";
+        setTimeout(function () { closeModal(); viewTeam(); }, 900);
+      });
+    };
+  }
+  function acceptInvites() {
+    if (!A.user || !A.user.email) return Promise.resolve();
+    return sb.from("company_invites").select("*").then(function (r) {
+      var inv = r.data || []; if (!inv.length) return;
+      return Promise.all(inv.map(function (iv) { return sb.from("memberships").insert({ company_id: iv.company_id, user_id: A.user.id, role: iv.role || "staff" }).then(function () { return sb.from("company_invites").delete().eq("id", iv.id); }).catch(function () {}); }));
+    }).catch(function () {});
+  }
+
   function viewSoon() {
     var nv = NAV.filter(function (x) { return x.id === A.view; })[0] || { t: "Segera" };
     shell('<div class="content"><div class="card"><div class="soon"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></svg></div><h3>' + esc(nv.t) + '</h3><p>Layar premium ini sedang dibangun mengikuti prototipe Hi-Fi FinFlow. Dashboard, Buku Besar, Laba Rugi &amp; Tax Command sudah aktif.</p></div></div></div>', nv.t);

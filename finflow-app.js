@@ -84,7 +84,7 @@
       o.type = "sawtooth"; o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(42, t + 1.1);
       o2.type = "sine"; o2.frequency.setValueAtTime(34, t);
       lp.type = "lowpass"; lp.frequency.setValueAtTime(360, t); lp.frequency.exponentialRampToValueAtTime(120, t + 1.1);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.12); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
       o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(ctx.destination); o.start(t); o2.start(t); o.stop(t + 1.2); o2.stop(t + 1.2);
     } catch (e) {}
     try {

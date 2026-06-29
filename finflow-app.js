@@ -833,7 +833,7 @@
   function boot(session) {
     if (!session) { showAuth(false); return; }
     A.user = session.user; closeModal();
-    ensureCompany().then(loadSub).then(initSync).then(function () { closeModal(); hideSplash(); render(); })
+    acceptInvites().then(ensureCompany).then(loadSub).then(initSync).then(function () { closeModal(); hideSplash(); render(); })
       .catch(function (e) { console.error("[FinFlow]", e); hideSplash(); modal(MBRAND + '<div class="mh">Terjadi kesalahan</div><div class="msub">' + esc(e.message || String(e)) + '</div><button class="mbtn pri" onclick="location.reload()">Muat ulang</button>'); });
   }
   sb.auth.getSession().then(function (r) { boot(r.data.session); });

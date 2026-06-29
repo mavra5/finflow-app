@@ -762,6 +762,22 @@
     }).catch(function () {});
   }
 
+  function viewCashflow() {
+    var m = metrics(), map = {};
+    A.S.tx.forEach(function (t) { var d = new Date(t.date), k = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2); if (!map[k]) map[k] = { inc: 0, exp: 0, lab: d.toLocaleDateString("id-ID", { month: "short", year: "numeric" }) }; if (t.kind === "inc") map[k].inc += t.amount; else map[k].exp += t.amount; });
+    var keys = Object.keys(map).sort(), bal = 0;
+    var rows = keys.map(function (k) { var r = map[k], net = r.inc - r.exp; bal += net; return '<tr><td><span class="m">' + esc(r.lab) + '</span></td><td style="text-align:right;font-family:var(--mono);color:var(--pos)">' + rp(r.inc) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--neg)">' + rp(r.exp) + '</td><td style="text-align:right;font-family:var(--mono);color:' + (net >= 0 ? "var(--pos)" : "var(--neg)") + '">' + (net >= 0 ? "+" : "") + rp(net) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(bal) + "</td></tr>"; }).join("");
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Laporan Arus Kas</div><div class="ps">Metode langsung — arus kas masuk &amp; keluar per bulan.</div></div><div class="acts"><button class="btn" id="expX"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Excel</button><button class="btn" id="expP"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> PDF</button></div></div>' +
+      '<div class="kpis" style="grid-template-columns:repeat(3,1fr)">' +
+        kpi("Total Kas Masuk", rpShort(m.inc), '<path d="M12 19V5M5 12l7-7 7 7"/>', "up", "operasi") +
+        kpi("Total Kas Keluar", rpShort(m.exp), '<path d="M12 5v14M5 12l7 7 7-7"/>', "dn", "operasi") +
+        kpi("Saldo Kas", rpShort(m.laba), '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/>', m.laba >= 0 ? "up" : "dn", "akhir periode") +
+      "</div>" +
+      '<div class="card">' + (keys.length ? '<table class="tbl"><thead><tr><th>Bulan</th><th style="text-align:right">Kas Masuk</th><th style="text-align:right">Kas Keluar</th><th style="text-align:right">Arus Bersih</th><th style="text-align:right">Saldo Akhir</th></tr></thead><tbody>' + rows + '<tr><td class="m">Total</td><td style="text-align:right;font-family:var(--mono);color:var(--pos)">' + rp(m.inc) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--neg)">' + rp(m.exp) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(m.laba) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--gold-lt)">' + rp(m.laba) + "</td></tr></tbody></table>" : '<div class="empty">Belum ada transaksi untuk laporan arus kas.</div>') + "</div></div>";
+    shell(inner, "Arus Kas");
+    $("#expP").onclick = printPage;
+    $("#expX").onclick = function () { var r = [["Bulan", "Kas Masuk", "Kas Keluar", "Arus Bersih", "Saldo Akhir"]], b = 0; keys.forEach(function (k) { var x = map[k], net = x.inc - x.exp; b += net; r.push([x.lab, x.inc, x.exp, net, b]); }); download("arus-kas-" + (A.company.name || "finflow") + ".csv", toCSV(r), "text/csv;charset=utf-8"); };
+  }
   function viewClients() {
     shell('<div class="content"><div class="phead"><div><div class="pt">Semua Klien</div><div class="ps">Memuat ringkasan…</div></div></div><div class="card"><div class="spin"></div></div></div>', "Semua Klien");
     var ids = (A.companies || []).map(function (c) { return c.id; });

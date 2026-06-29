@@ -291,7 +291,7 @@
     root.innerHTML =
       '<div class="app"><aside class="side" id="side">' +
         '<div class="brand" data-v="dash">' + LOGO + '<div class="wm">Fin<span class="f">Flow</span></div></div>' +
-        '<div class="ws" id="wsBtn"><span class="mk">' + mk + '</span><div class="nm">' + esc(co.name || "Perusahaan") + '<small>' + esc((co.business_type || "jasa")) + " · " + (A.plan ? esc(A.plan.name) : "") + '</small></div><svg class="cx" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>' +
+        '<div class="ws" id="wsBtn">' + ((A.S && A.S.profile && A.S.profile.logo) ? '<span class="mk" style="background:none;box-shadow:none;overflow:hidden;padding:0"><img src="' + A.S.profile.logo + '" style="width:26px;height:26px;object-fit:cover;border-radius:7px"></span>' : '<span class="mk">' + mk + "</span>") + '<div class="nm">' + esc(co.name || "Perusahaan") + '<small>' + esc((co.business_type || "jasa")) + " · " + (A.plan ? esc(A.plan.name) : "") + '</small></div><svg class="cx" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>' +
         nav +
         '<div class="spacer"></div>' +
         '<div class="me" id="meBtn"><span class="av">' + um + '</span><div class="nm">' + esc((A.user && A.user.email || "").split("@")[0]) + '<small>' + (A.plan ? esc(A.plan.name) : "Free") + '</small></div></div>' +

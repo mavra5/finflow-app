@@ -809,6 +809,18 @@
     $("#x").onclick = closeModal;
     $("#rm_cal").onclick = function () { closeModal(); A.view = "calendar"; render(); };
   }
+  function showBranding() {
+    if (!A.S.profile) A.S.profile = {};
+    function prev() { var lg = A.S.profile.logo; return lg ? '<img src="' + lg + '" style="max-height:80px;max-width:220px;border-radius:8px">' : '<div style="color:var(--faint);font-size:13px">Belum ada logo</div>'; }
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Logo &amp; Branding</div><div class="msub">Logo ini tampil di invoice &amp; sidebar untuk ' + esc(A.company.name) + '.</div>' +
+      '<div id="lgPrev" style="text-align:center;margin:12px 0;padding:14px;border:1px dashed var(--line);border-radius:12px">' + prev() + "</div>" +
+      '<input type="file" id="lg_f" accept="image/*" class="inp" style="padding:9px"><div class="mmsg" id="lg_m"></div>' +
+      '<button class="mbtn ghost" id="lg_rm">Hapus logo</button><button class="mbtn pri" id="lg_done">Selesai</button>');
+    $("#x").onclick = function () { closeModal(); render(); };
+    $("#lg_done").onclick = function () { closeModal(); render(); };
+    $("#lg_rm").onclick = function () { A.S.profile.logo = ""; save(); $("#lgPrev").innerHTML = prev(); };
+    $("#lg_f").onchange = function () { var f = this.files[0]; if (!f) return; if (f.size > 500000) { $("#lg_m").className = "mmsg err"; $("#lg_m").textContent = "Logo terlalu besar (maks ~500KB). Pilih gambar lebih kecil."; return; } var r = new FileReader(); r.onload = function () { A.S.profile.logo = r.result; save(); $("#lgPrev").innerHTML = prev(); var m = $("#lg_m"); m.className = "mmsg ok"; m.textContent = "Logo tersimpan."; }; r.readAsDataURL(f); };
+  }
   function showCategories() {
     if (!A.S.cats) A.S.cats = { inc: CATS.inc.slice(), exp: CATS.exp.slice() };
     function chips(kind) { return catsFor(kind).map(function (c, i) { return '<span data-rm="' + kind + "|" + i + '" style="cursor:pointer;background:rgba(212,175,55,.1);border:1px solid var(--line-gold);color:var(--gold-lt);padding:4px 10px;border-radius:20px;font-size:12px;display:inline-flex;gap:6px">' + esc(c) + " ✕</span>"; }).join(""); }

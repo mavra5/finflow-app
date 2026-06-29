@@ -61,21 +61,7 @@
       cs.connect(hp); hp.connect(cg); cg.connect(ctx.destination); cs.start(t0); cs.stop(t0 + cd);
     } catch (e) {}
   }
-  // premium UI click (synth, macOS/iOS-like soft tick)
-  function uiClick() {
-    try {
-      if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
-      if (_actx.state === "suspended") _actx.resume();
-      var ctx = _actx, t = ctx.currentTime;
-      var o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = "sine"; o.frequency.setValueAtTime(2600, t); o.frequency.exponentialRampToValueAtTime(1100, t + 0.025);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.055);
-      o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + 0.06);
-    } catch (e) {}
-  }
-  document.addEventListener("click", function (e) {
-    if (e.target.closest && e.target.closest(".btn,.ni,.ic-btn,.mbtn,.brand,.ws,.me,.footrow a,.mlink,[data-v],[data-go],[data-buy],.seg2 button,.mx,.menub")) uiClick();
-  }, true);
+  // (suara klik UI dihapus atas permintaan — app senyap)
 
   // Venom welcome — dijamin berbunyi pada interaksi pertama (browser blokir audio sebelum gesture)
   var _zoomed = false, _venomFired = false;

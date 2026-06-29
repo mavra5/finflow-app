@@ -318,6 +318,7 @@
     $("#meBtn").onclick = showAccount; $("#wsBtn").onclick = showCompanies;
     $("#addTop").onclick = showAddTx;
     var _th = $("#thBtn"); if (_th) _th.onclick = toggleTheme;
+    var _bl = $("#bellBtn"); if (_bl) _bl.onclick = showReminders;
   }
 
   /* ================= VIEWS ================= */

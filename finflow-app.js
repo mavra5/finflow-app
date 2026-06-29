@@ -336,6 +336,7 @@
     if (A.view === "accounts") return viewAccounts();
     if (A.view === "resolution") return viewResolution();
     if (A.view === "invoice") return viewInvoice();
+    if (A.view === "team") return viewTeam();
     return viewSoon();
   }
 

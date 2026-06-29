@@ -35,6 +35,10 @@
     return "Rp " + Math.round(n).toLocaleString("id-ID");
   }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function download(name, content, type) { var b = new Blob(["﻿" + content], { type: type }); var u = URL.createObjectURL(b); var a = document.createElement("a"); a.href = u; a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 200); }
+  function csvCell(s) { s = String(s == null ? "" : s); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  function toCSV(rows) { return rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n"); }
+  function printPage() { document.body.classList.add("printing-page"); window.print(); setTimeout(function () { document.body.classList.remove("printing-page"); }, 400); }
   var _actx, _splashIv, _splashGone;
   function thunder() {
     try {

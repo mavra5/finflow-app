@@ -383,9 +383,11 @@
           '<div class="orow"><div class="oi exp"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8h14"/></svg></div><div><div class="ot">PPh Final UMKM 0,5%</div><div class="od">PP 23 · dari omzet bruto</div></div><span class="amt">' + rp(pphFinal) + '</span></div>' +
           '<div class="orow"><div class="oi exp"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/></svg></div><div><div class="ot">PPN 11% (jika PKP)</div><div class="od">estimasi dari pendapatan</div></div><span class="amt">' + rp(m.inc * 0.11) + '</span></div>' +
           '<div class="footrow"><a data-go="tax">Buka Tax Command →</a></div></div></div>' +
+      '<div class="card" style="margin-top:16px"><div class="card-h"><h3>Target &amp; Budget Bulan Ini</h3><span class="mlink" id="setTgt" style="margin-left:auto;cursor:pointer">Atur target</span></div><div style="padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:24px">' + tgtBar("Pendapatan", mthM.inc, (A.S.target || {}).income, "var(--pos)") + tgtBar("Beban (budget)", mthM.exp, (A.S.target || {}).expense, "var(--neg)") + "</div></div>" +
       "</div>";
     shell(inner, "Command Center");
     $("#addBtn").onclick = showAddTx;
+    var _st = $("#setTgt"); if (_st) _st.onclick = showTarget;
     root.querySelectorAll("[data-go]").forEach(function (e) { e.onclick = function () { var v = e.getAttribute("data-go"); var nv = NAV.filter(function (x) { return x.id === v; })[0]; if (nv && nv.f && !can(nv.f)) return showPlans(); A.view = v; render(); }; });
   }
   function kpi(lab, val, ic, dir, since) {

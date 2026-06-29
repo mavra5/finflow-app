@@ -418,6 +418,13 @@
       '<tr><td class="m" style="color:var(--neg)">Total Beban</td><td style="text-align:right;font-family:var(--mono);color:var(--neg)">' + rp(te) + '</td></tr></tbody></table>' +
       '<div style="padding:18px 20px;border-top:1px solid var(--line-gold);display:flex;align-items:center"><div style="font-family:var(--disp);font-size:18px">Laba Bersih</div><div style="margin-left:auto;font-family:var(--disp);font-size:26px;color:' + (ti - te >= 0 ? "var(--pos)" : "var(--neg)") + '">' + rp(ti - te) + '</div></div></div></div>';
     shell(inner, "Laba Rugi");
+    $("#expP").onclick = printPage;
+    $("#expX").onclick = function () {
+      var rows = [["LAPORAN LABA RUGI", A.company.name || ""], [], ["Pendapatan", "Jumlah"]];
+      Object.keys(inc).forEach(function (k) { rows.push([k, inc[k]]); }); rows.push(["Total Pendapatan", ti], []);
+      rows.push(["Beban", "Jumlah"]); Object.keys(exp).forEach(function (k) { rows.push([k, exp[k]]); }); rows.push(["Total Beban", te], [], ["Laba Bersih", ti - te]);
+      download("laba-rugi-" + (A.company.name || "finflow") + ".csv", toCSV(rows), "text/csv;charset=utf-8");
+    };
   }
 
   function viewTax() {

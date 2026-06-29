@@ -243,6 +243,7 @@
       A.S = (d && d.tx) ? d : defState();
       if (!A.S.profile) A.S.profile = { company: A.company.name, type: A.company.business_type };
       if (!A.S.invoices) A.S.invoices = [];
+      if (!A.S.target) A.S.target = { income: 0, expense: 0 };
       if (!d || !d.tx) { A.dirty = true; push(); }
       setInterval(push, 4000);
       window.addEventListener("beforeunload", function () { try { if (A.dirty) navigator.sendBeacon; push(); } catch (e) {} });

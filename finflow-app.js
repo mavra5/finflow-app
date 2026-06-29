@@ -344,7 +344,7 @@
       '<div class="grid2"><div class="card"><div class="card-h"><h3>Tren Pendapatan &amp; Laba Bersih</h3><div class="lg"><span><i style="background:var(--gold)"></i>Pendapatan</span><span><i style="background:#7d93c8"></i>Laba</span></div></div>' +
         '<div class="chart-wrap"><svg viewBox="0 0 ' + W + " " + H + '" width="100%" style="display:block">' +
           '<g stroke="rgba(255,255,255,0.05)"><line x1="50" y1="40" x2="' + W + '" y2="40"/><line x1="50" y1="100" x2="' + W + '" y2="100"/><line x1="50" y1="160" x2="' + W + '" y2="160"/></g>' +
-          (hasTx ? '<path d="' + area + '" fill="url(#area)"/><path d="' + path(incP) + '" fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="' + path(pts("net")) + '" fill="none" stroke="#7d93c8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' : '') +
+          (hasTx ? '<path class="af" d="' + area + '" fill="url(#area)"/><path class="ld" d="' + path(incP) + '" fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path class="ld" d="' + path(pts("net")) + '" fill="none" stroke="#7d93c8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' : '') +
           '<g font-family="JetBrains Mono" font-size="10" fill="#6c6a62" text-anchor="middle">' + mm.map(function (d, i) { return '<text x="' + (50 + i * step) + '" y="' + (H - 8) + '">' + d.lab + "</text>"; }).join("") + "</g>" +
         "</svg></div></div>" +
         '<div class="card"><div class="card-h"><h3>Komposisi Beban</h3><span class="hint">akumulasi</span></div><div class="donut-wrap">' +

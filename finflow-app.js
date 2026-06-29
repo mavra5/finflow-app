@@ -544,7 +544,7 @@
         kpi("Pertumbuhan", (prev && prev.inc ? (growth >= 0 ? "+" : "") + growth.toFixed(1) + "%" : "—"), '<path d="M3 12h18M12 3l9 9-9 9"/>', growth >= 0 ? "up" : "dn", "vs bulan lalu") +
         kpi("Rata-rata Transaksi", rpShort(avg), '<circle cx="12" cy="12" r="9"/>', "up", m.n + " transaksi") +
       "</div>" +
-      '<div class="grid2"><div class="card"><div class="card-h"><h3>' + mLbl[metric] + ' per Bulan</h3>' + seg + '</div><div style="padding:18px 20px;display:flex;gap:8px;align-items:flex-end">' + bars + "</div></div>" +
+      '<div class="grid2"><div class="card"><div class="card-h"><h3>' + mLbl[metric] + ' per Bulan</h3><div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">' + pseg + seg + '</div></div><div style="padding:18px 20px;display:flex;gap:8px;align-items:flex-end">' + bars + "</div></div>" +
         '<div class="card"><div class="card-h"><h3>Insight</h3><span class="hint">otomatis</span></div><div style="padding:8px 4px">' + insights.map(function (t) { return '<div class="orow"><div class="oi inc"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></div><div><div class="ot" style="font-weight:500;font-size:13px;color:var(--soft);line-height:1.5">' + esc(t) + "</div></div></div>"; }).join("") + "</div></div></div></div>";
     shell(inner, "Financial Insights");
     root.querySelectorAll("[data-m]").forEach(function (e) { e.onclick = function () { A.insMetric = e.getAttribute("data-m"); render(); }; });

@@ -755,6 +755,15 @@
     }).catch(function () {});
   }
 
+  function showReminders() {
+    var dl = deadlines();
+    var rows = dl.list.slice().sort(function (a, b) { return a.due - b.due; }).map(function (o) {
+      return '<div class="orow"><div class="oi exp" style="border-color:var(--' + (o.days <= 3 ? "neg" : "warn") + ')"><svg viewBox="0 0 24 24" stroke="var(--' + (o.days <= 3 ? "neg" : "warn") + ')" fill="none"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div style="flex:1"><div class="ot">' + esc(o.t) + '</div><div class="od">' + esc(o.s) + " · " + o.due.toLocaleDateString("id-ID", { day: "numeric", month: "long" }) + "</div></div>" + (o.amt ? '<span class="amt">' + rp(o.amt) + "</span>" : "") + '<span class="pill ' + o.cls + '" style="margin-left:10px">' + o.lbl + "</span></div>";
+    }).join("");
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Pengingat Tenggat Pajak</div><div class="msub">Kewajiban masa berjalan — ' + new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" }) + ".</div>" + rows + '<button class="mbtn ghost" id="rm_cal" style="margin-top:12px">Buka Compliance Calendar</button>', true);
+    $("#x").onclick = closeModal;
+    $("#rm_cal").onclick = function () { closeModal(); A.view = "calendar"; render(); };
+  }
   function showCategories() {
     if (!A.S.cats) A.S.cats = { inc: CATS.inc.slice(), exp: CATS.exp.slice() };
     function chips(kind) { return catsFor(kind).map(function (c, i) { return '<span data-rm="' + kind + "|" + i + '" style="cursor:pointer;background:rgba(212,175,55,.1);border:1px solid var(--line-gold);color:var(--gold-lt);padding:4px 10px;border-radius:20px;font-size:12px;display:inline-flex;gap:6px">' + esc(c) + " ✕</span>"; }).join(""); }

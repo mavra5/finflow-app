@@ -803,7 +803,7 @@
     modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Catat Pergerakan</div><div class="msub">Tambah pemasukan atau pengeluaran.</div>' +
       '<div class="seg2"><button class="on inc" data-k="inc" id="ki">Pemasukan</button><button data-k="exp" id="ke">Pengeluaran</button></div>' +
       '<div class="fld"><label>Jumlah (Rp)</label><input class="inp" id="tx_amt" inputmode="numeric" placeholder="0"></div>' +
-      '<div class="fld"><label>Kategori</label><select class="inp" id="tx_cat">' + opts() + '</select></div>' +
+      '<div class="fld"><label>Kategori <span class="mlink" id="tx_mgcat" style="float:right;font-size:10px;text-transform:none;letter-spacing:0">Kelola</span></label><select class="inp" id="tx_cat">' + opts() + '</select></div>' +
       '<div class="fld"><label>Keterangan</label><input class="inp" id="tx_note" placeholder="mis. Penjualan produk A"></div>' +
       '<div class="fld"><label>Tanggal</label><input class="inp" id="tx_date" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>' +
       '<div class="mmsg" id="tx_m"></div><button class="mbtn pri" id="tx_save">Simpan transaksi</button>');

@@ -130,8 +130,9 @@
       '<div class="fld"><input class="inp" id="ap" type="password" placeholder="Kata sandi"></div>' +
       '<div class="mmsg" id="am"></div>' +
       '<button class="mbtn pri" id="ago">' + (up ? "Daftar sekarang" : "Masuk") + '</button>' +
-      '<div class="mfoot">' + (up ? "Sudah punya akun? " : "Belum punya akun? ") + '<span class="mlink" id="asw">' + (up ? "Masuk" : "Daftar gratis") + "</span></div>");
+      '<div class="mfoot">' + (up ? "Sudah punya akun? " : "Belum punya akun? ") + '<span class="mlink" id="asw">' + (up ? "Masuk" : "Daftar gratis") + "</span>" + (up ? "" : ' · <span class="mlink" id="afg">Lupa kata sandi?</span>') + "</div>");
     $("#asw").onclick = function () { showAuth(!up); };
+    var fg = $("#afg"); if (fg) fg.onclick = showForgot;
     $("#ag").onclick = function () { sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin } }); };
     var go = $("#ago");
     go.onclick = function () {
@@ -145,6 +146,45 @@
         if (r.error) throw r.error;
         if (up && !r.data.session) { m.className = "mmsg ok"; m.textContent = "Akun dibuat! Mengarahkan…"; }
       }).catch(function (e) { m.className = "mmsg err"; m.textContent = e.message || String(e); go.disabled = false; go.textContent = up ? "Daftar sekarang" : "Masuk"; });
+    };
+  }
+
+  function showForgot() {
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Atur Ulang Kata Sandi</div><div class="msub">Masukkan email akunmu — kami kirim tautan untuk membuat kata sandi baru.</div>' +
+      '<div class="fld"><input class="inp" id="fg_e" type="email" placeholder="Email"></div>' +
+      '<div class="mmsg" id="fg_m"></div><button class="mbtn pri" id="fg_s">Kirim tautan reset</button>' +
+      '<div class="mfoot"><span class="mlink" id="fg_bk">← Kembali ke login</span></div>');
+    $("#x").onclick = function () { showAuth(false); };
+    $("#fg_bk").onclick = function () { showAuth(false); };
+    $("#fg_s").onclick = function () {
+      var email = ($("#fg_e").value || "").trim().toLowerCase(), m = $("#fg_m"), b = $("#fg_s");
+      m.className = "mmsg err";
+      if (!/.+@.+\..+/.test(email)) { m.textContent = "Email tidak valid."; return; }
+      b.disabled = true; b.textContent = "Mengirim…";
+      sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname }).then(function (r) {
+        if (r.error) { m.textContent = r.error.message; b.disabled = false; b.textContent = "Kirim tautan reset"; return; }
+        m.className = "mmsg ok"; m.textContent = "Terkirim! Cek inbox (dan folder spam) " + email + ", lalu klik tautannya.";
+        b.textContent = "✓ Email terkirim";
+      });
+    };
+  }
+  function showSetPassword(fromRecovery) {
+    modal(MBRAND + (fromRecovery ? "" : '<button class="mx" id="x">×</button>') + '<div class="mh">Kata Sandi Baru</div><div class="msub">' + (fromRecovery ? "Tautan reset valid — buat kata sandi barumu sekarang." : "Ganti kata sandi akunmu.") + '</div>' +
+      '<div class="fld"><input class="inp" id="np_1" type="password" placeholder="Kata sandi baru (min. 6 karakter)"></div>' +
+      '<div class="fld"><input class="inp" id="np_2" type="password" placeholder="Ulangi kata sandi baru"></div>' +
+      '<div class="mmsg" id="np_m"></div><button class="mbtn pri" id="np_s">Simpan kata sandi</button>');
+    var x = $("#x"); if (x) x.onclick = closeModal;
+    $("#np_s").onclick = function () {
+      var p1 = $("#np_1").value, p2 = $("#np_2").value, m = $("#np_m"), b = $("#np_s");
+      m.className = "mmsg err";
+      if (p1.length < 6) { m.textContent = "Minimal 6 karakter."; return; }
+      if (p1 !== p2) { m.textContent = "Kata sandi tidak sama."; return; }
+      b.disabled = true; b.textContent = "Menyimpan…";
+      sb.auth.updateUser({ password: p1 }).then(function (r) {
+        if (r.error) { m.textContent = r.error.message; b.disabled = false; b.textContent = "Simpan kata sandi"; return; }
+        m.className = "mmsg ok"; m.textContent = "✓ Kata sandi diperbarui!";
+        setTimeout(function () { closeModal(); if (!A.user) location.reload(); }, 900);
+      });
     };
   }
 
@@ -1531,11 +1571,12 @@
   function showAccount() {
     modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Akun</div>' +
       '<div class="msub">' + esc(A.user && A.user.email || "") + '<br>Perusahaan: <b style="color:var(--ink)">' + esc(A.company.name) + '</b><br>Paket: <b style="color:var(--gold-lt)">' + esc((A.plan && A.plan.name) || "-") + "</b></div>" +
-      '<button class="mbtn pri" id="up">Lihat paket / upgrade</button><button class="mbtn ghost" id="thm">Tema: ' + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙") + '</button><button class="mbtn ghost" id="brand">Logo &amp; Branding</button><button class="mbtn ghost" id="bkup">Backup data (JSON)</button><button class="mbtn ghost" id="rstr">Pulihkan dari backup</button><input type="file" id="rstrF" accept=".json,application/json" style="display:none"><button class="mbtn ghost" id="sy">Sinkron sekarang</button><button class="mbtn ghost" id="out">Keluar</button>');
+      '<button class="mbtn pri" id="up">Lihat paket / upgrade</button><button class="mbtn ghost" id="thm">Tema: ' + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙") + '</button><button class="mbtn ghost" id="brand">Logo &amp; Branding</button><button class="mbtn ghost" id="cpwd">Ganti kata sandi</button><button class="mbtn ghost" id="bkup">Backup data (JSON)</button><button class="mbtn ghost" id="rstr">Pulihkan dari backup</button><input type="file" id="rstrF" accept=".json,application/json" style="display:none"><button class="mbtn ghost" id="sy">Sinkron sekarang</button><button class="mbtn ghost" id="out">Keluar</button>');
     $("#x").onclick = closeModal;
     $("#up").onclick = showPlans;
     $("#thm").onclick = function () { toggleTheme(); $("#thm").textContent = "Tema: " + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙"); };
     $("#brand").onclick = function () { closeModal(); showBranding(); };
+    $("#cpwd").onclick = function () { showSetPassword(false); };
     $("#bkup").onclick = function () {
       var payload = { app: "FinFlow", version: 1, company: (A.company || {}).name || "", exported: new Date().toISOString(), state: A.S };
       download("finflow-backup-" + ((A.company || {}).name || "data").replace(/\W+/g, "-").toLowerCase() + "-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
@@ -1567,6 +1608,10 @@
       .catch(function (e) { console.error("[FinFlow]", e); hideSplash(); modal(MBRAND + '<div class="mh">Terjadi kesalahan</div><div class="msub">' + esc(e.message || String(e)) + '</div><button class="mbtn pri" onclick="location.reload()">Muat ulang</button>'); });
   }
   sb.auth.getSession().then(function (r) { boot(r.data.session); });
-  sb.auth.onAuthStateChange(function (_e, session) { if (session && !A.user) boot(session); if (!session && A.user) { A.user = null; location.reload(); } });
+  sb.auth.onAuthStateChange(function (_e, session) {
+    if (_e === "PASSWORD_RECOVERY") { if (session && !A.user) { A.user = session.user; } hideSplash(); showSetPassword(true); return; }
+    if (session && !A.user) boot(session);
+    if (!session && A.user) { A.user = null; location.reload(); }
+  });
   setTimeout(hideSplash, 4000);
 })();

@@ -1531,11 +1531,30 @@
   function showAccount() {
     modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Akun</div>' +
       '<div class="msub">' + esc(A.user && A.user.email || "") + '<br>Perusahaan: <b style="color:var(--ink)">' + esc(A.company.name) + '</b><br>Paket: <b style="color:var(--gold-lt)">' + esc((A.plan && A.plan.name) || "-") + "</b></div>" +
-      '<button class="mbtn pri" id="up">Lihat paket / upgrade</button><button class="mbtn ghost" id="thm">Tema: ' + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙") + '</button><button class="mbtn ghost" id="brand">Logo &amp; Branding</button><button class="mbtn ghost" id="sy">Sinkron sekarang</button><button class="mbtn ghost" id="out">Keluar</button>');
+      '<button class="mbtn pri" id="up">Lihat paket / upgrade</button><button class="mbtn ghost" id="thm">Tema: ' + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙") + '</button><button class="mbtn ghost" id="brand">Logo &amp; Branding</button><button class="mbtn ghost" id="bkup">Backup data (JSON)</button><button class="mbtn ghost" id="rstr">Pulihkan dari backup</button><input type="file" id="rstrF" accept=".json,application/json" style="display:none"><button class="mbtn ghost" id="sy">Sinkron sekarang</button><button class="mbtn ghost" id="out">Keluar</button>');
     $("#x").onclick = closeModal;
     $("#up").onclick = showPlans;
     $("#thm").onclick = function () { toggleTheme(); $("#thm").textContent = "Tema: " + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙"); };
     $("#brand").onclick = function () { closeModal(); showBranding(); };
+    $("#bkup").onclick = function () {
+      var payload = { app: "FinFlow", version: 1, company: (A.company || {}).name || "", exported: new Date().toISOString(), state: A.S };
+      download("finflow-backup-" + ((A.company || {}).name || "data").replace(/\W+/g, "-").toLowerCase() + "-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
+      toast("✓ Backup diunduh");
+    };
+    $("#rstr").onclick = function () { $("#rstrF").click(); };
+    $("#rstrF").onchange = function () {
+      var f = this.files[0]; if (!f) return;
+      var r = new FileReader();
+      r.onload = function () {
+        try {
+          var d = JSON.parse(r.result), st = d && (d.state || d);
+          if (!st || !Object.prototype.toString.call(st.tx).match(/Array/)) { toast("✗ File backup tidak valid"); return; }
+          if (!window.confirm("Ganti seluruh data \"" + ((A.company || {}).name || "") + "\" dengan isi backup ini? Data saat ini akan tertimpa.")) return;
+          A.S = st; save(); push().then(function () { toast("✓ Data dipulihkan dari backup"); closeModal(); render(); });
+        } catch (e) { toast("✗ Gagal membaca file: " + e.message); }
+      };
+      r.readAsText(f);
+    };
     $("#sy").onclick = function () { A.dirty = true; push().then(function () { $("#sy").textContent = "✓ Tersinkron"; }); };
     $("#out").onclick = function () { A.dirty = true; push().then(function () { return sb.auth.signOut(); }).then(function () { location.reload(); }); };
   }

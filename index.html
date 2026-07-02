@@ -172,9 +172,28 @@ select.inp{appearance:none}
 .plan .pr{font-family:var(--disp);font-size:24px;color:var(--gold-lt);margin:5px 0}.plan .pr small{font-size:13px;color:var(--faint);font-family:var(--ui)}
 .plan ul{list-style:none;margin:6px 0 0;color:var(--soft);font-size:12px;line-height:1.55}.plan li::before{content:"✓ ";color:var(--gold)}
 .tag{font-size:10px;font-weight:700;color:#1a1407;background:var(--grad-gold);padding:3px 8px;border-radius:20px}
-#splash{position:fixed;inset:0;background:#0a0a0d;display:grid;place-items:center;z-index:9999;transition:opacity .5s}
-.flogo-single{width:130px;height:auto;opacity:0;animation:logoZoom 2s cubic-bezier(.2,.7,.2,1) forwards;filter:drop-shadow(0 0 24px rgba(212,175,55,.35))}
-@keyframes logoZoom{0%{opacity:0;transform:scale(.6)}18%{opacity:1}100%{opacity:1;transform:scale(1.2)}}
+#splash{position:fixed;inset:0;background:#0a0a0d;display:grid;place-items:center;z-index:9999;transition:opacity .35s}
+/* Splash: diam 0.5s → efek cahaya menyapu logo F selama 1s → langsung ke login */
+.flogo-wrap{position:relative;width:130px;line-height:0}
+.flogo-single{width:130px;height:auto;opacity:1;filter:drop-shadow(0 0 24px rgba(212,175,55,.35));animation:logoLight 1s ease-in-out .5s}
+@keyframes logoLight{
+  0%{filter:drop-shadow(0 0 24px rgba(212,175,55,.35)) brightness(1)}
+  40%{filter:drop-shadow(0 0 70px rgba(255,255,255,.9)) drop-shadow(0 0 28px #f7e08a) brightness(1.75)}
+  100%{filter:drop-shadow(0 0 24px rgba(212,175,55,.35)) brightness(1)}
+}
+.lsweep{position:absolute;inset:0;pointer-events:none;opacity:0;
+  -webkit-mask:url(assets/finflow-logo-gold.png) center/contain no-repeat;
+  mask:url(assets/finflow-logo-gold.png) center/contain no-repeat;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.55) 47%,#fff 50%,rgba(255,255,255,.55) 53%,transparent 62%);
+  background-size:200% 100%;background-repeat:no-repeat;
+  animation:lsweep 1s ease-in-out .5s;
+}
+@keyframes lsweep{
+  0%{opacity:0;background-position:150% 0}
+  12%{opacity:1}
+  88%{opacity:1}
+  100%{opacity:0;background-position:-50% 0}
+}
 .splash-logo{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px}
 .splash-logo .halo{position:absolute;top:-46px;left:50%;transform:translateX(-50%);width:270px;height:270px;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,.22),rgba(212,175,55,.06) 46%,transparent 68%);pointer-events:none;z-index:0;animation:halo 2.6s ease-in-out infinite}
 .splash-logo .halo::before{content:"";position:absolute;inset:26px;border-radius:50%;border:1px solid rgba(212,175,55,.28);box-shadow:0 0 50px rgba(212,175,55,.22) inset,0 0 34px rgba(212,175,55,.18);animation:spin 9s linear infinite}
@@ -209,7 +228,53 @@ select.inp{appearance:none}
 .bolt.s2.glow,.bolt.s2b.glow{animation:strikeG 2.6s linear 2.3s infinite}
 @keyframes strike{0%{opacity:0;stroke-dashoffset:640}1.5%{opacity:1;stroke-dashoffset:0}5%{opacity:.2}7%{opacity:.95}12%{opacity:0;stroke-dashoffset:0}100%{opacity:0}}
 @keyframes strikeG{0%{opacity:0}2%{opacity:.7}7%{opacity:.15}10%{opacity:.5}13%{opacity:0}100%{opacity:0}}
+/* === UI v2 — sidebar collapse, toast, create menu, bottom nav, transisi === */
+.content{animation:vIn .32s cubic-bezier(.2,.8,.2,1)}
+@keyframes vIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card{transition:border-color .22s}
+.card:hover{border-color:rgba(212,175,55,.20)}
+.app{transition:grid-template-columns .3s cubic-bezier(.2,.8,.2,1)}
+.side{transition:padding .3s cubic-bezier(.2,.8,.2,1)}
+.app.sbc{grid-template-columns:76px 1fr}
+.app.sbc .side{padding:18px 10px;overflow-x:hidden}
+.app.sbc .brand .wm,.app.sbc .ws .nm,.app.sbc .ws .cx,.app.sbc .me .nm,.app.sbc .ni .txt,.app.sbc .ni .lk{display:none}
+.app.sbc .brand{justify-content:center;padding:4px 0 18px}
+.app.sbc .ws{justify-content:center;padding:9px 6px}
+.app.sbc .ni{justify-content:center;padding:10px 8px}
+.app.sbc .me{justify-content:center}
+.app.sbc .navg{text-align:center;font-size:0;padding:12px 0 4px}
+.app.sbc .navg::before{content:"•••";font-size:10px;letter-spacing:2px;color:var(--dim)}
+.sbt{margin-top:6px;border-top:1px solid var(--line);border-radius:0;padding-top:12px!important;color:var(--faint)!important}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--bg-3);color:var(--ink);border:1px solid var(--line-gold);border-radius:12px;padding:11px 20px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.3s;z-index:10001;box-shadow:0 12px 30px rgba(0,0,0,.5);max-width:88vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#createMenu{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:10000;display:none;align-items:flex-end;justify-content:center}
+#createMenu.show{display:flex}
+.cm-sheet{background:var(--bg-1);border:1px solid var(--line);border-bottom:none;border-radius:22px 22px 0 0;width:min(580px,100%);padding:18px 18px calc(24px + env(safe-area-inset-bottom));animation:cmUp .3s cubic-bezier(.2,.8,.2,1);max-height:80vh;overflow:auto}
+@keyframes cmUp{from{transform:translateY(46px);opacity:0}to{transform:none;opacity:1}}
+.cm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+.cm-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg-2);cursor:pointer;text-align:left;color:var(--ink);font-family:var(--ui);transition:.16s}
+.cm-item:hover{border-color:var(--line-gold);background:var(--bg-3);transform:translateY(-1px)}
+.cm-ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;flex-shrink:0}
+.cm-ico svg{width:19px;height:19px;stroke:#101014;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cm-tx b{display:block;font-size:13px}.cm-tx small{color:var(--faint);font-size:11px}
+.gs-hit{display:flex;gap:11px;align-items:center;padding:10px 12px;border-radius:11px;cursor:pointer;transition:.14s}
+.gs-hit:hover{background:var(--bg-2)}
+.bgt-bar{height:9px;border-radius:6px;background:var(--bg-3);overflow:hidden;border:1px solid var(--line-2)}
+.bgt-bar i{display:block;height:100%;border-radius:6px}
+.bnav{display:none}
+@media (max-width:1080px){
+ .bnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--side);border-top:1px solid var(--line);z-index:60;padding:6px 4px calc(6px + env(safe-area-inset-bottom));align-items:flex-end}
+ .bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--faint);font-size:10px;font-weight:600;padding:5px 0;text-decoration:none;border-radius:10px;cursor:pointer}
+ .bnav a svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+ .bnav a.on{color:var(--gold-lt)}
+ .bnav .fab{margin-top:-26px;width:54px;height:54px;flex:0 0 54px;border-radius:50%;background:var(--grad-gold);display:grid;place-items:center;box-shadow:0 10px 24px rgba(212,175,55,.42)}
+ .bnav .fab svg{stroke:#1a1407;width:24px;height:24px}
+ .content{padding-bottom:120px}
+ .cm-grid{grid-template-columns:1fr}
+}
 @media print{
+ #toast,#createMenu,.bnav{display:none!important}
+
   body{background:#fff}
   #cursor-glow,#splash{display:none!important}
   body.printing-page .side,body.printing-page .top,body.printing-page .phead .acts{display:none!important}
@@ -233,7 +298,10 @@ select.inp{appearance:none}
 </defs></svg>
 
 <div id="splash"><div class="splash-logo">
-  <img class="flogo-single" src="assets/finflow-logo-gold.png" alt="FinFlow" />
+  <div class="flogo-wrap">
+    <img class="flogo-single" src="assets/finflow-logo-gold.png" alt="FinFlow" />
+    <span class="lsweep"></span>
+  </div>
 </div></div>
 
 <div id="cursor-glow"></div>

@@ -219,11 +219,13 @@
         '<div class="mh">Buat perusahaan</div><div class="msub">Profil tenant pertama Anda. Bisa tambah klien lain kapan saja.</div>' +
         '<div class="fld"><label>Nama perusahaan</label><input class="inp" id="cn" placeholder="mis. PT Cipta Nusantara"></div>' +
         '<div class="fld"><label>Jenis usaha</label><select class="inp" id="ct"><option value="jasa">Jasa</option><option value="dagang">Dagang</option><option value="manufaktur">Manufaktur</option></select></div>' +
+        '<div class="fld"><label>Status pajak</label><select class="inp" id="cts"><option value="ptp">PT Perorangan / OP UMKM (PPh final 0,5%)</option><option value="nonpkp">Badan Non-PKP (CV/PT — tarif umum)</option><option value="pkp">PKP (wajib PPN &amp; faktur pajak)</option></select></div>' +
         '<div class="fld"><label>NPWP (opsional)</label><input class="inp" id="cnp" placeholder="00.000.000.0-000.000"></div>' +
         '<div class="mmsg" id="cm"></div><button class="mbtn pri" id="cs">Simpan &amp; mulai</button>');
       var b = $("#cs");
       b.onclick = function () {
         if (A.busy) return; A.busy = true; b.disabled = true; b.textContent = "Menyimpan…";
+        try { localStorage.setItem("ff_pending_taxstatus", ($("#cts") || {}).value || ""); } catch (e) {}
         sb.rpc("create_company", { p_name: $("#cn").value.trim() || "Perusahaan Saya", p_business_type: $("#ct").value, p_npwp: $("#cnp").value.trim() || null })
           .then(function (r) { if (r.error) throw r.error; return sb.from("companies").select("*").eq("id", r.data).single(); })
           .then(function (c) { A.company = c.data; A.busy = false; closeModal(); resolve(c.data); })
@@ -259,7 +261,10 @@
       if (!A.S.profile) A.S.profile = { company: A.company.name, type: A.company.business_type };
       if (!A.S.invoices) A.S.invoices = [];
       if (!A.S.target) A.S.target = { income: 0, expense: 0 };
-      if (!A.S.cats) A.S.cats = { inc: CATS.inc.slice(), exp: CATS.exp.slice() };
+      if (!A.S.cats) { var tc = TYPE_CATS[(A.company && A.company.business_type) || "jasa"] || CATS; A.S.cats = { inc: tc.inc.slice(), exp: tc.exp.slice() }; }
+      if (!A.S.profile.taxStatus) { try { var pts = localStorage.getItem("ff_pending_taxstatus"); if (pts) { A.S.profile.taxStatus = pts; localStorage.removeItem("ff_pending_taxstatus"); A.dirty = true; } } catch (e) {} }
+      if (!A.S.stock) A.S.stock = { awal: 0, akhir: 0 };
+      if (!A.S.taxlog) A.S.taxlog = {};
       if (!A.S.quotes) A.S.quotes = [];
       if (!A.S.purchases) A.S.purchases = [];
       if (!A.S.receipts) A.S.receipts = [];
@@ -277,7 +282,55 @@
 
   /* ================= DATA / METRICS ================= */
   var CATS = { inc: ["Penjualan", "Jasa", "Pendapatan Lain"], exp: ["Pembelian", "Gaji", "Sewa", "Operasional", "Pajak", "Lain-lain"] };
+  // Kategori default per jenis usaha (SAK EMKM) — jasa tanpa HPP; dagang & manufaktur dengan komponen HPP
+  var TYPE_CATS = {
+    jasa: { inc: ["Pendapatan Jasa", "Pendapatan Lain"], exp: ["Gaji", "Sewa", "Operasional", "Pemasaran", "Penyusutan", "Pajak", "Lain-lain"] },
+    dagang: { inc: ["Penjualan Barang", "Pendapatan Lain"], exp: ["Pembelian Barang Dagang", "Ongkos Angkut Pembelian", "Gaji", "Sewa", "Operasional", "Pemasaran", "Penyusutan", "Pajak", "Lain-lain"] },
+    manufaktur: { inc: ["Penjualan Produk", "Pendapatan Lain"], exp: ["Bahan Baku", "Tenaga Kerja Langsung", "Overhead Pabrik", "Gaji", "Sewa", "Operasional", "Pemasaran", "Penyusutan", "Pajak", "Lain-lain"] },
+  };
+  // Kategori beban yang termasuk komponen HPP per jenis usaha
+  var HPP_CATS = {
+    dagang: ["Pembelian Barang Dagang", "Ongkos Angkut Pembelian", "Pembelian"],
+    manufaktur: ["Bahan Baku", "Tenaga Kerja Langsung", "Overhead Pabrik", "Pembelian"],
+  };
   function catsFor(kind) { var c = (A.S && A.S.cats && A.S.cats[kind]) || CATS[kind]; return c.length ? c : CATS[kind]; }
+  function bizType() { return (A.company && A.company.business_type) || "jasa"; }
+  function taxStatus() { return (A.S && A.S.profile && A.S.profile.taxStatus) || ""; }
+  var TAXSTAT_LBL = { ptp: "PT Perorangan / OP UMKM", nonpkp: "Badan Non-PKP", pkp: "PKP" };
+  function monthInc(key) { key = key || monthKey(); var v = 0; A.S.tx.forEach(function (t) { if (t.kind === "inc" && String(t.date).slice(0, 7) === key) v += t.amount; }); return v; }
+  // Kewajiban masa per status pajak (PMK 81/2024: setor tgl 15, lapor PPh21 tgl 20, PPN akhir bulan berikutnya)
+  function obligationsFor(st) {
+    var obs = [];
+    if (st === "ptp") obs.push({ id: "umkm", t: "Setor PPh Final UMKM 0,5%", s: "PP 55/2022 jo. PP 20/2026", day: 15, calc: function (inc) { return inc * 0.005; } });
+    if (st === "nonpkp" || st === "pkp") obs.push({ id: "pph25", t: "Angsuran PPh Pasal 25", s: "badan — tarif umum", day: 15, calc: function () { return 0; } });
+    obs.push({ id: "pph21s", t: "Setor PPh 21 karyawan", s: "PMK 81/2024", day: 15, calc: function () { var v = 0; (A.S.employees || []).forEach(function (e) { v += calcGaji(e).pph; }); return v; } });
+    obs.push({ id: "pph21", t: "Lapor SPT Masa PPh 21", s: "e-Bupot Coretax", day: 20, calc: function () { return 0; } });
+    if (st === "pkp") obs.push({ id: "ppn", t: "Setor & Lapor SPT Masa PPN", s: "PMK 131/2024 — efektif 11%", day: 99, calc: function (inc) { return Math.round(inc * 0.11); } });
+    return obs;
+  }
+  function taxDone(key, id) { return !!(A.S.taxlog && A.S.taxlog[key] && A.S.taxlog[key].indexOf(id) >= 0); }
+  function toggleTaxDone(key, id) {
+    if (!A.S.taxlog) A.S.taxlog = {};
+    var arr = A.S.taxlog[key] = A.S.taxlog[key] || [];
+    var i = arr.indexOf(id);
+    if (i >= 0) arr.splice(i, 1); else { arr.push(id); toast("✓ Ditandai selesai — skor kepatuhan naik"); }
+    save(); render();
+  }
+  function showTaxStatus() {
+    var cur = taxStatus();
+    function opt(v, t, d) { return '<label style="display:flex;gap:10px;align-items:flex-start;padding:11px;border:1px solid ' + (cur === v ? "var(--line-gold)" : "var(--line)") + ';border-radius:12px;margin-bottom:8px;cursor:pointer"><input type="radio" name="txs" value="' + v + '"' + (cur === v ? " checked" : "") + ' style="margin-top:3px"><span><b style="font-size:13px">' + t + '</b><br><span style="font-size:11.5px;color:var(--soft)">' + d + "</span></span></label>"; }
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Status Pajak Perusahaan</div><div class="msub">Menentukan kewajiban, kalender, dan perhitungan pajak Anda.</div>' +
+      opt("ptp", "PT Perorangan / OP UMKM", "PPh final 0,5% dari omzet (PP 20/2026 — tanpa batas waktu, omzet ≤ Rp4,8 M). Tidak memungut PPN.") +
+      opt("nonpkp", "Badan Non-PKP (CV / PT biasa)", "Tarif umum PPh Badan (22%, fasilitas Ps. 31E utk omzet ≤ Rp4,8 M ≈ 11% dari laba). Per PP 20/2026 CV/PT tidak lagi memakai 0,5%. Tidak memungut PPN.") +
+      opt("pkp", "Pengusaha Kena Pajak (PKP)", "Wajib memungut PPN (efektif 11% — PMK 131/2024), terbit faktur pajak, lapor SPT Masa PPN tiap bulan + PPh Badan.") +
+      '<button class="mbtn pri" id="txs_s">Simpan status</button>');
+    $("#x").onclick = closeModal;
+    $("#txs_s").onclick = function () {
+      var sel = document.querySelector('input[name="txs"]:checked');
+      if (!sel) { closeModal(); return; }
+      A.S.profile.taxStatus = sel.value; save(); closeModal(); toast("✓ Status pajak: " + TAXSTAT_LBL[sel.value]); render();
+    };
+  }
   function metrics() {
     var tx = A.S.tx, inc = 0, exp = 0; for (var i = 0; i < tx.length; i++) { if (tx[i].kind === "inc") inc += tx[i].amount; else exp += tx[i].amount; }
     return { inc: inc, exp: exp, laba: inc - exp, n: tx.length };
@@ -488,51 +541,105 @@
     root.querySelectorAll("[data-del]").forEach(function (e) { e.onclick = function () { var id = e.getAttribute("data-del"); A.S.tx = A.S.tx.filter(function (t) { return t.id !== id; }); save(); render(); }; });
   }
 
+  function showStock() {
+    var s = A.S.stock || { awal: 0, akhir: 0 }, bt = bizType();
+    modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Persediaan</div><div class="msub">' + (bt === "manufaktur" ? "Nilai persediaan gabungan (bahan baku + barang jadi) untuk HPP sederhana." : "Nilai persediaan barang dagang untuk perhitungan HPP.") + '</div>' +
+      '<div class="fld"><label>Persediaan awal periode (Rp)</label><input class="inp" id="sk_a" inputmode="numeric" value="' + (s.awal ? Number(s.awal).toLocaleString("id-ID") : "") + '" placeholder="0"></div>' +
+      '<div class="fld"><label>Persediaan akhir / saat ini (Rp)</label><input class="inp" id="sk_k" inputmode="numeric" value="' + (s.akhir ? Number(s.akhir).toLocaleString("id-ID") : "") + '" placeholder="0"></div>' +
+      '<button class="mbtn pri" id="sk_s">Simpan</button>');
+    $("#x").onclick = closeModal; moneyIn($("#sk_a")); moneyIn($("#sk_k"));
+    $("#sk_s").onclick = function () { A.S.stock = { awal: nval("sk_a"), akhir: nval("sk_k") }; save(); closeModal(); toast("✓ Persediaan tersimpan"); render(); };
+  }
   function viewPnl() {
+    var bt = bizType(), hppList = HPP_CATS[bt];
     var inc = {}, exp = {}, ti = 0, te = 0;
     A.S.tx.forEach(function (t) { if (t.kind === "inc") { inc[t.cat] = (inc[t.cat] || 0) + t.amount; ti += t.amount; } else { exp[t.cat] = (exp[t.cat] || 0) + t.amount; te += t.amount; } });
-    function rows(o) { return Object.keys(o).map(function (k) { return '<tr><td>' + esc(k) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(o[k]) + "</td></tr>"; }).join("") || '<tr><td colspan="2" style="color:var(--faint)">—</td></tr>'; }
-    var inner = '<div class="content"><div class="phead"><div><div class="pt">Laporan Laba Rugi</div><div class="ps">Ringkasan pendapatan dan beban · ' + new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" }) + '.</div></div><div class="acts"><button class="btn" id="expX"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Excel</button><button class="btn" id="expP"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> PDF</button></div></div>' +
-      '<div class="card" style="max-width:640px"><table class="tbl"><thead><tr><th>Pendapatan</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' + rows(inc) +
-      '<tr><td class="m" style="color:var(--pos)">Total Pendapatan</td><td style="text-align:right;font-family:var(--mono);color:var(--pos)">' + rp(ti) + '</td></tr></tbody></table>' +
-      '<table class="tbl"><thead><tr><th>Beban</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' + rows(exp) +
-      '<tr><td class="m" style="color:var(--neg)">Total Beban</td><td style="text-align:right;font-family:var(--mono);color:var(--neg)">' + rp(te) + '</td></tr></tbody></table>' +
-      '<div style="padding:18px 20px;border-top:1px solid var(--line-gold);display:flex;align-items:center"><div style="font-family:var(--disp);font-size:18px">Laba Bersih</div><div style="margin-left:auto;font-family:var(--disp);font-size:26px;color:' + (ti - te >= 0 ? "var(--pos)" : "var(--neg)") + '">' + rp(ti - te) + '</div></div></div></div>';
+    function rowsOf(o) { return Object.keys(o).map(function (k) { return '<tr><td>' + esc(k) + '</td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(o[k]) + "</td></tr>"; }).join("") || '<tr><td colspan="2" style="color:var(--faint)">—</td></tr>'; }
+    var body, labaBersih, csvRows = [["LAPORAN LABA RUGI (" + bt.toUpperCase() + ")", A.company.name || ""], [], ["Pendapatan", "Jumlah"]];
+    Object.keys(inc).forEach(function (k) { csvRows.push([k, inc[k]]); }); csvRows.push(["Total Pendapatan", ti], []);
+    if (hppList) {
+      var s = A.S.stock || { awal: 0, akhir: 0 }, hppComp = {}, hppBuy = 0, opEx = {}, opTot = 0;
+      Object.keys(exp).forEach(function (k) { if (hppList.indexOf(k) >= 0) { hppComp[k] = exp[k]; hppBuy += exp[k]; } else { opEx[k] = exp[k]; opTot += exp[k]; } });
+      var hpp = s.awal + hppBuy - s.akhir, labaKotor = ti - hpp; labaBersih = labaKotor - opTot;
+      var hppTitle = bt === "manufaktur" ? "Harga Pokok Produksi & Penjualan" : "Harga Pokok Penjualan (HPP)";
+      body = '<table class="tbl"><thead><tr><th>Pendapatan</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' + rowsOf(inc) +
+        '<tr><td class="m" style="color:var(--pos)">Total Pendapatan</td><td style="text-align:right;font-family:var(--mono);color:var(--pos)">' + rp(ti) + "</td></tr></tbody></table>" +
+        '<table class="tbl"><thead><tr><th>' + hppTitle + '</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' +
+        '<tr><td>Persediaan awal</td>' + tdR(rp(s.awal)) + "</tr>" + rowsOf(hppComp) +
+        '<tr><td>Persediaan akhir</td><td style="text-align:right;font-family:var(--mono);color:var(--pos)">(' + rp(s.akhir) + ')</td></tr>' +
+        '<tr><td class="m" style="color:var(--neg)">Total HPP</td><td style="text-align:right;font-family:var(--mono);color:var(--neg)">' + rp(hpp) + "</td></tr></tbody></table>" +
+        '<div style="padding:13px 20px;border-top:1px solid var(--line);display:flex"><div class="m" style="font-size:14px">Laba Kotor</div><div style="margin-left:auto;font-family:var(--mono);font-size:15px;color:' + (labaKotor >= 0 ? "var(--pos)" : "var(--neg)") + '">' + rp(labaKotor) + "</div></div>" +
+        '<table class="tbl"><thead><tr><th>Beban Usaha</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' + rowsOf(opEx) +
+        '<tr><td class="m" style="color:var(--neg)">Total Beban Usaha</td><td style="text-align:right;font-family:var(--mono);color:var(--neg)">' + rp(opTot) + "</td></tr></tbody></table>";
+      csvRows.push([hppTitle, ""], ["Persediaan awal", s.awal]);
+      Object.keys(hppComp).forEach(function (k) { csvRows.push([k, hppComp[k]]); });
+      csvRows.push(["Persediaan akhir", -s.akhir], ["Total HPP", hpp], ["LABA KOTOR", labaKotor], []);
+      csvRows.push(["Beban Usaha", ""]); Object.keys(opEx).forEach(function (k) { csvRows.push([k, opEx[k]]); });
+      csvRows.push(["Total Beban Usaha", opTot], [], ["LABA BERSIH", labaBersih]);
+    } else {
+      labaBersih = ti - te;
+      body = '<table class="tbl"><thead><tr><th>Pendapatan</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' + rowsOf(inc) +
+        '<tr><td class="m" style="color:var(--pos)">Total Pendapatan</td><td style="text-align:right;font-family:var(--mono);color:var(--pos)">' + rp(ti) + "</td></tr></tbody></table>" +
+        '<table class="tbl"><thead><tr><th>Beban</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>' + rowsOf(exp) +
+        '<tr><td class="m" style="color:var(--neg)">Total Beban</td><td style="text-align:right;font-family:var(--mono);color:var(--neg)">' + rp(te) + "</td></tr></tbody></table>";
+      csvRows.push(["Beban", "Jumlah"]); Object.keys(exp).forEach(function (k) { csvRows.push([k, exp[k]]); }); csvRows.push(["Total Beban", te], [], ["LABA BERSIH", labaBersih]);
+    }
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Laporan Laba Rugi</div><div class="ps">Format <b style="color:var(--gold-lt)">' + bt + "</b> — " + (hppList ? "dengan HPP" : "tanpa HPP (perusahaan jasa)") + ' · ' + new Date().toLocaleDateString("id-ID", { month: "long", year: "numeric" }) + '.</div></div><div class="acts">' + (hppList ? '<button class="btn" id="stkBtn"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Persediaan</button>' : "") + '<button class="btn" id="expX"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Excel</button><button class="btn" id="expP"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> PDF</button></div></div>' +
+      '<div class="card" style="max-width:640px">' + body +
+      '<div style="padding:18px 20px;border-top:1px solid var(--line-gold);display:flex;align-items:center"><div style="font-family:var(--disp);font-size:18px">Laba Bersih</div><div style="margin-left:auto;font-family:var(--disp);font-size:26px;color:' + (labaBersih >= 0 ? "var(--pos)" : "var(--neg)") + '">' + rp(labaBersih) + '</div></div></div></div>';
     shell(inner, "Laba Rugi");
     $("#expP").onclick = printPage;
-    $("#expX").onclick = function () {
-      var rows = [["LAPORAN LABA RUGI", A.company.name || ""], [], ["Pendapatan", "Jumlah"]];
-      Object.keys(inc).forEach(function (k) { rows.push([k, inc[k]]); }); rows.push(["Total Pendapatan", ti], []);
-      rows.push(["Beban", "Jumlah"]); Object.keys(exp).forEach(function (k) { rows.push([k, exp[k]]); }); rows.push(["Total Beban", te], [], ["Laba Bersih", ti - te]);
-      download("laba-rugi-" + (A.company.name || "finflow") + ".csv", toCSV(rows), "text/csv;charset=utf-8");
-    };
+    var sk = $("#stkBtn"); if (sk) sk.onclick = showStock;
+    $("#expX").onclick = function () { download("laba-rugi-" + (A.company.name || "finflow") + ".csv", toCSV(csvRows), "text/csv;charset=utf-8"); };
   }
 
   function viewTax() {
-    var m = metrics();
-    var inner = '<div class="content"><div class="phead"><div><div class="pt">Tax Command</div><div class="ps">Estimasi kewajiban pajak berdasarkan transaksi.</div></div></div>' +
-      '<div class="kpis">' +
-        kpi("Omzet Bruto", rpShort(m.inc), '<path d="M3 17l5-5 4 4 8-8"/>', "up", "akumulasi") +
-        kpi("PPh Final 0,5%", rpShort(m.inc * 0.005), '<path d="M12 3v18M5 8h14"/>', "up", "PP 23") +
-        kpi("PPN Keluaran 11%", rpShort(m.inc * 0.11), '<rect x="3" y="4" width="18" height="17" rx="2"/>', "up", "jika PKP") +
-        kpi("Est. Pajak Penghasilan", rpShort(Math.max(0, m.laba) * 0.11), '<path d="M12 3l8 4v5c0 5-3.5 7.5-8 9"/>', "up", "11% laba (UMKM badan)") +
-      '</div><div class="card"><div class="card-h"><h3>Catatan</h3></div><div style="padding:18px 20px;color:var(--soft);font-size:13.5px;line-height:1.6">Angka di atas adalah <b style="color:var(--ink)">estimasi</b> untuk perencanaan, bukan nasihat pajak resmi. Tarif final UMKM 0,5% (PP 23) berlaku untuk peredaran bruto tertentu; PPN hanya untuk Pengusaha Kena Pajak. Verifikasi dengan peraturan terbaru atau konsultan pajak sebelum pelaporan.</div></div></div>';
+    var m = metrics(), st = taxStatus(), incNow = monthInc();
+    var over48 = m.inc > 4800000000;
+    var banner = '<div class="card" style="margin-bottom:16px"><div style="padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:220px"><div style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em">Status Pajak</div><div style="font-size:15px;font-weight:700;color:' + (st ? "var(--gold-lt)" : "var(--neg)") + '">' + (st ? TAXSTAT_LBL[st] : "⚠ Belum diatur — kewajiban & perhitungan belum akurat") + '</div></div><button class="btn' + (st ? "" : " pri") + '" id="txStat">' + (st ? "Ubah status" : "Atur sekarang") + "</button></div></div>";
+    var kpis, notes;
+    if (st === "pkp") {
+      var pphB = over48 ? Math.max(0, m.laba) * 0.22 : Math.max(0, m.laba) * 0.11;
+      kpis = kpi("Omzet Bulan Ini", rpShort(incNow), '<path d="M3 17l5-5 4 4 8-8"/>', "up", "DPP penyerahan") +
+        kpi("PPN Keluaran (efektif 11%)", rpShort(incNow * 0.11), '<rect x="3" y="4" width="18" height="17" rx="2"/>', "up", "12% × DPP 11/12") +
+        kpi("Est. PPh Badan Setahun", rpShort(pphB), '<path d="M12 3l8 4v5c0 5-3.5 7.5-8 9"/>', "up", over48 ? "22% × laba" : "Ps. 31E ≈ 11% × laba") +
+        kpi("PPh 21 Karyawan/bln", rpShort((A.S.employees || []).reduce(function (a, e) { return a + calcGaji(e).pph; }, 0)), '<circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>', "up", "metode TER");
+      notes = "Sebagai <b style='color:var(--ink)'>PKP</b>: pungut PPN tiap penyerahan (PMK 131/2024 — 12% × DPP 11/12 = efektif 11% untuk non-mewah), terbitkan faktur pajak via Coretax, setor &amp; lapor SPT Masa PPN paling lambat akhir bulan berikutnya. PPh Badan tarif 22% (fasilitas Pasal 31E ~50% untuk omzet ≤ Rp4,8 M). Per <b style='color:var(--ink)'>PP 20/2026</b>, CV/PT biasa tidak lagi memakai PPh final 0,5%.";
+    } else if (st === "nonpkp") {
+      var pphB2 = over48 ? Math.max(0, m.laba) * 0.22 : Math.max(0, m.laba) * 0.11;
+      kpis = kpi("Omzet Bulan Ini", rpShort(incNow), '<path d="M3 17l5-5 4 4 8-8"/>', "up", "belum wajib PPN") +
+        kpi("Est. PPh Badan Setahun", rpShort(pphB2), '<path d="M12 3l8 4v5c0 5-3.5 7.5-8 9"/>', "up", over48 ? "22% × laba" : "Ps. 31E ≈ 11% × laba") +
+        kpi("Angsuran PPh 25/bln", rpShort(pphB2 / 12), '<path d="M12 3v18M5 8h14"/>', "up", "estimasi 1/12") +
+        kpi("Jarak ke Wajib PKP", rpShort(Math.max(0, 4800000000 - m.inc)), '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', over48 ? "dn" : "up", over48 ? "WAJIB daftar PKP!" : "sisa kuota Rp4,8 M");
+      notes = "Sebagai <b style='color:var(--ink)'>Badan Non-PKP</b>: belum memungut PPN. <b style='color:var(--ink)'>PP 20/2026 (berlaku 22 Apr 2026)</b>: CV/Firma/PT biasa TIDAK lagi bisa PPh final 0,5% — gunakan tarif umum 22% dengan fasilitas Pasal 31E (diskon 50% ≈ 11% dari laba, untuk omzet ≤ Rp4,8 M). Jika omzet setahun melewati Rp4,8 M wajib mendaftar PKP." + (over48 ? " <b style='color:var(--neg)'>Omzet Anda sudah melewati Rp4,8 M — segera daftar PKP.</b>" : "");
+    } else {
+      kpis = kpi("Omzet Bulan Ini", rpShort(incNow), '<path d="M3 17l5-5 4 4 8-8"/>', "up", "dasar PPh final") +
+        kpi("PPh Final 0,5% Bulan Ini", rpShort(incNow * 0.005), '<path d="M12 3v18M5 8h14"/>', "up", "setor ≤ tgl 15 bln depan") +
+        kpi("Total PPh Final Setahun", rpShort(m.inc * 0.005), '<path d="M12 3l8 4v5c0 5-3.5 7.5-8 9"/>', "up", "akumulasi omzet") +
+        kpi("Sisa Kuota Omzet 0,5%", rpShort(Math.max(0, 4800000000 - m.inc)), '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', over48 ? "dn" : "up", over48 ? "lewat Rp4,8 M!" : "dari Rp4,8 M");
+      notes = "Sebagai <b style='color:var(--ink)'>PT Perorangan / OP UMKM</b>: PPh final <b style='color:var(--ink)'>0,5% × omzet bulanan</b> (PP 55/2022 jo. <b style='color:var(--ink)'>PP 20/2026</b> — kini <b style='color:var(--ink)'>tanpa batas waktu</b> untuk OP &amp; PT Perorangan), setor paling lambat tgl 15 bulan berikutnya via Coretax. Tidak memungut PPN. Jika omzet setahun &gt; Rp4,8 M: pindah tarif umum &amp; wajib PKP." + (st ? "" : " <b style='color:var(--warn)'>Status pajak belum diatur — angka memakai asumsi UMKM.</b>");
+    }
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Tax Command</div><div class="ps">Kewajiban pajak sesuai status — diperbarui mengikuti peraturan terbaru.</div></div></div>' +
+      banner + '<div class="kpis">' + kpis + "</div>" +
+      '<div class="card"><div class="card-h"><h3>Dasar Aturan</h3><span class="hint">update 2026</span></div><div style="padding:18px 20px;color:var(--soft);font-size:13.5px;line-height:1.7">' + notes + '<br><br><span style="font-size:11.5px;color:var(--faint)">Angka bersifat estimasi perencanaan — verifikasi sebelum lapor. Referensi: PMK 131/2024 (PPN), PP 20/2026 (PPh final UMKM), PMK 81/2024 (tenggat Coretax).</span></div></div></div>';
     shell(inner, "Tax Command");
+    $("#txStat").onclick = showTaxStatus;
   }
 
   function deadlines() {
-    var m = metrics(), now = new Date(), Y = now.getFullYear(), M = now.getMonth();
+    var now = new Date(), Y = now.getFullYear(), M = now.getMonth();
     var nm = new Date(Y, M + 1, 1), lastDay = new Date(Y, M + 2, 0).getDate();
-    function due(day) { return new Date(Y, M + 1, day); }
-    var periodLbl = now.toLocaleDateString("id-ID", { month: "long" });
-    var list = [
-      { t: "Setor PPh 21 & 23", s: "Masa " + periodLbl, amt: 0, due: due(10), day: 10 },
-      { t: "PPh Final UMKM 0,5%", s: "PP 23 · masa " + periodLbl, amt: m.inc * 0.005, due: due(15), day: 15 },
-      { t: "Lapor SPT Masa Unifikasi", s: "PPh 21/23 · masa " + periodLbl, amt: 0, due: due(20), day: 20 },
-      { t: "SPT Masa PPN (jika PKP)", s: "Pajak Keluaran · masa " + periodLbl, amt: m.inc * 0.11, due: due(lastDay), day: lastDay },
-    ];
-    list.forEach(function (o) { o.days = Math.ceil((o.due - now) / 86400000); o.cls = o.days < 0 ? "neg" : (o.days <= 3 ? "neg" : (o.days <= 10 ? "warn" : "pos")); o.lbl = o.days < 0 ? "Lewat" : "H-" + o.days; });
-    return { list: list, nmName: nm.toLocaleDateString("id-ID", { month: "long", year: "numeric" }), nm: nm, lastDay: lastDay, Y: Y, M: M + 1, total: list.reduce(function (a, b) { return a + b.amt; }, 0) };
+    function due(day) { return new Date(Y, M + 1, Math.min(day, lastDay)); }
+    var periodLbl = now.toLocaleDateString("id-ID", { month: "long" }), key = monthKey(now);
+    var st = taxStatus() || "ptp", incNow = monthInc(key);
+    var list = obligationsFor(st).map(function (o) {
+      var day = o.day === 99 ? lastDay : o.day;
+      return { id: o.id, t: o.t, s: o.s + " · masa " + periodLbl, amt: Math.round(o.calc(incNow)), due: due(day), day: day, done: taxDone(key, o.id) };
+    });
+    // SPT Tahunan Badan — muncul Januari–April (jatuh tempo 30 April)
+    if (M <= 3) { var spt = { id: "spt_tahunan", t: "SPT Tahunan PPh Badan", s: "tahun pajak " + (Y - 1) + " · Coretax", amt: 0, due: new Date(Y, 3, 30), day: 30, done: taxDone(Y + "-SPT", "spt_tahunan") }; list.push(spt); }
+    list.forEach(function (o) { o.days = Math.ceil((o.due - now) / 86400000); o.cls = o.done ? "pos" : (o.days < 0 ? "neg" : (o.days <= 3 ? "neg" : (o.days <= 10 ? "warn" : "pos"))); o.lbl = o.done ? "Selesai ✓" : (o.days < 0 ? "Lewat" : "H-" + o.days); });
+    return { list: list, key: key, st: st, nmName: nm.toLocaleDateString("id-ID", { month: "long", year: "numeric" }), nm: nm, lastDay: lastDay, Y: Y, M: M + 1, total: list.reduce(function (a, b) { return a + (b.done ? 0 : b.amt); }, 0) };
   }
 
   function viewCalendar() {
@@ -546,10 +653,12 @@
       cells += '<div style="aspect-ratio:1;border:1px solid ' + (has ? "var(--line-gold)" : "var(--line-2)") + ';border-radius:9px;padding:6px 7px;background:' + (has ? "rgba(212,175,55,.08)" : "transparent") + '"><div style="font-size:12px;color:' + (has ? "var(--gold-lt)" : "var(--soft)") + ';font-weight:600">' + d + "</div>" + (has ? '<div style="font-size:8.5px;color:var(--faint);margin-top:2px;line-height:1.2">' + has.map(function (x) { return x.t.split(" ").slice(0, 2).join(" "); }).join("<br>") + "</div>" : "") + "</div>";
     }
     var rows = D.list.slice().sort(function (a, b) { return a.due - b.due; }).map(function (o) {
-      return '<div class="orow"><div class="oi exp"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div><div><div class="ot">' + esc(o.t) + '</div><div class="od">' + esc(o.s) + " · jatuh tempo " + o.due.toLocaleDateString("id-ID", { day: "numeric", month: "short" }) + '</div></div>' + (o.amt ? '<span class="amt">' + rp(o.amt) + "</span>" : "") + '<span class="pill ' + o.cls + '" style="margin-left:13px">' + o.lbl + "</span></div>";
+      var mkey = o.id === "spt_tahunan" ? D.Y + "-SPT" : D.key;
+      return '<div class="orow"' + (o.done ? ' style="opacity:.55"' : "") + '><div class="oi ' + (o.done ? "inc" : "exp") + '"><svg viewBox="0 0 24 24">' + (o.done ? '<path d="M20 6 9 17l-5-5"/>' : '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>') + '</svg></div><div style="flex:1"><div class="ot"' + (o.done ? ' style="text-decoration:line-through"' : "") + '>' + esc(o.t) + '</div><div class="od">' + esc(o.s) + " · jatuh tempo " + o.due.toLocaleDateString("id-ID", { day: "numeric", month: "short" }) + '</div></div>' + (o.amt && !o.done ? '<span class="amt">' + rp(o.amt) + "</span>" : "") + '<span class="pill ' + o.cls + '" style="margin-left:13px">' + o.lbl + '</span><span class="mlink" data-td="' + mkey + "|" + o.id + '" style="margin-left:10px;font-size:11px;color:' + (o.done ? "var(--faint)" : "var(--pos)") + '">' + (o.done ? "batal" : "✓ selesai") + "</span></div>";
     }).join("");
-    var nearest = D.list.slice().sort(function (a, b) { return a.due - b.due; })[0];
-    var inner = '<div class="content"><div class="phead"><div><div class="pt">Compliance Calendar</div><div class="ps">Tak ada tenggat yang terlewat — diingatkan H-10, H-7, H-3, H-1.</div></div></div>' +
+    var nearest = D.list.filter(function (o) { return !o.done; }).sort(function (a, b) { return a.due - b.due; })[0];
+    var stChip = '<div style="margin-top:6px;font-size:12px;color:var(--soft)">Status: <b style="color:var(--gold-lt)">' + (taxStatus() ? TAXSTAT_LBL[taxStatus()] : "belum diatur") + '</b> · <span class="mlink" id="calStat">ubah</span></div>';
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Compliance Calendar</div><div class="ps">Kewajiban sesuai status pajakmu — tandai ✓ setelah setor/lapor untuk menaikkan skor.</div>' + stChip + "</div></div>" +
       '<div class="kpis">' +
         kpi("Total Kewajiban", rpShort(D.total), '<path d="M12 3v18M5 8h14"/>', "up", "masa berjalan") +
         kpi("Deadline Terdekat", (nearest ? nearest.lbl : "-"), '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', nearest && nearest.days <= 3 ? "dn" : "up", nearest ? nearest.due.toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "") +
@@ -559,6 +668,8 @@
       '<div class="grid2"><div class="card"><div class="card-h"><h3>' + esc(D.nmName) + '</h3><span class="hint">jatuh tempo</span></div><div style="padding:14px 18px"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:8px;font-size:10px;color:var(--faint);text-align:center">' + ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map(function (x) { return "<div>" + x + "</div>"; }).join("") + '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">' + cells + "</div></div></div>" +
         '<div class="card"><div class="card-h"><h3>Kewajiban Terdekat</h3></div><div>' + rows + '</div></div></div></div>';
     shell(inner, "Compliance Calendar");
+    var cs = $("#calStat"); if (cs) cs.onclick = showTaxStatus;
+    root.querySelectorAll("[data-td]").forEach(function (e) { e.onclick = function () { var p = e.getAttribute("data-td").split("|"); toggleTaxDone(p[0], p[1]); }; });
   }
 
   function viewCoretax() {
@@ -615,28 +726,49 @@
     root.querySelectorAll("[data-p]").forEach(function (e) { e.onclick = function () { A.insPeriod = +e.getAttribute("data-p"); render(); }; });
   }
 
+  function taxHistory(n) {
+    // n bulan terakhir SEBELUM bulan berjalan: {key, lbl, total, done}
+    var st = taxStatus() || "ptp", obs = obligationsFor(st), out = [], now = new Date();
+    for (var i = n; i >= 1; i--) {
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1), k = monthKey(d);
+      var done = 0; obs.forEach(function (o) { if (taxDone(k, o.id)) done++; });
+      out.push({ key: k, lbl: d.toLocaleDateString("id-ID", { month: "short" }), total: obs.length, done: done, full: done >= obs.length });
+    }
+    return out;
+  }
   function viewCompliance() {
     var m = metrics(), co = A.company || {};
     var pembukuan = Math.min(100, A.S.tx.length * 8);
-    var kepatuhan = Math.min(100, (co.npwp ? 60 : 30) + (A.S.tx.length ? 40 : 0));
-    var risiko = m.inc ? Math.min(100, Math.max(20, Math.round(100 - Math.max(0, (m.exp / m.inc * 100) - 70)))) : 50;
-    var score = Math.round(pembukuan * 0.4 + kepatuhan * 0.3 + risiko * 0.3);
-    var status = score >= 80 ? "Sehat" : (score >= 55 ? "Cukup" : "Perlu perhatian");
-    var statusDesc = score >= 80 ? "Kepatuhan baik dengan sedikit risiko." : (score >= 55 ? "Beberapa hal perlu dirapikan." : "Segera lengkapi pembukuan & data pajak.");
+    var profil = (co.npwp ? 50 : 0) + (taxStatus() ? 50 : 0);
+    var hist = taxHistory(6), histTot = 0, histDone = 0;
+    hist.forEach(function (h) { histTot += h.total; histDone += h.done; });
+    var ketepatan = histTot ? Math.round(histDone / histTot * 100) : 0;
+    var streak = 0; for (var i = hist.length - 1; i >= 0; i--) { if (hist[i].full) streak++; else break; }
+    var score = Math.round(pembukuan * 0.3 + profil * 0.2 + ketepatan * 0.5);
+    var status = score >= 80 ? "Wajib Pajak Patuh" : (score >= 55 ? "Cukup Patuh" : "Perlu perhatian");
+    var statusDesc = score >= 80 ? "Pertahankan! Riwayat pelaporanmu rapi — modal kuat saat pemeriksaan & pengajuan kredit." : (score >= 55 ? "Beberapa masa belum ditandai selesai. Rapikan di Compliance Calendar." : "Lengkapi profil pajak & tandai kewajiban yang sudah disetor di Compliance Calendar.");
+    var histBar = '<div style="display:flex;gap:7px;align-items:flex-end;padding:4px 0 2px">' + hist.map(function (h) {
+      var pct = h.total ? h.done / h.total : 0;
+      return '<div style="flex:1;text-align:center"><div style="height:44px;display:flex;align-items:flex-end;justify-content:center"><div title="' + h.lbl + ": " + h.done + "/" + h.total + '" style="width:70%;height:' + Math.max(4, pct * 44) + 'px;border-radius:4px 4px 0 0;background:' + (h.full ? "var(--grad-gold)" : (pct > 0 ? "var(--warn)" : "rgba(255,255,255,.08)")) + '"></div></div><div style="font-size:9px;color:var(--faint);margin-top:3px">' + h.lbl + "</div></div>";
+    }).join("") + "</div>";
+    var badge = streak >= 3 ? '<span class="pill pos" style="margin-left:8px">🏆 ' + streak + ' masa beruntun</span>' : (streak ? '<span class="pill warn" style="margin-left:8px">' + streak + " masa beruntun</span>" : "");
     function bar(lbl, v) { return '<div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--soft);margin:8px 0"><span style="width:80px">' + lbl + '</span><span style="flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><span style="display:block;height:100%;width:' + v + '%;background:var(--grad-gold);border-radius:3px"></span></span><span style="font-family:var(--mono);color:var(--val);width:28px;text-align:right">' + v + "</span></div>"; }
     var tips = [];
+    if (!taxStatus()) tips.push("Atur status pajak (PKP / Non-PKP / PT Perorangan) agar kewajiban & skor akurat.");
     if (!co.npwp) tips.push("Lengkapi NPWP perusahaan untuk skor kepatuhan lebih tinggi.");
+    if (ketepatan < 100 && histTot) tips.push("Tandai ✓ kewajiban yang sudah kamu setor/lapor di Compliance Calendar — " + (histTot - histDone) + " item masa lalu belum ditandai.");
     if (A.S.tx.length < 13) tips.push("Catat lebih banyak transaksi agar pembukuan makin lengkap.");
     if (m.inc && (m.exp / m.inc) > 0.7) tips.push("Rasio beban tinggi — tinjau pengeluaran untuk menurunkan risiko.");
-    if (!tips.length) tips.push("Pertahankan pencatatan rutin & pelaporan tepat waktu.");
-    var inner = '<div class="content"><div class="phead"><div><div class="pt">Compliance Index</div><div class="ps">Skor kesehatan kepatuhan pajak &amp; pembukuan Anda.</div></div></div>' +
+    if (!tips.length) tips.push("Sempurna! Pertahankan pencatatan rutin & pelaporan tepat waktu.");
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Compliance Index</div><div class="ps">Skor kepatuhan pajak &amp; pembukuan — berbasis riwayat setor/lapor nyata.</div></div></div>' +
       '<div class="grid2"><div class="card"><div class="idx" style="padding:24px;display:flex;gap:24px;align-items:center;flex-wrap:wrap">' +
         '<div style="width:152px;height:152px;border-radius:50%;background:conic-gradient(var(--gold) 0 ' + score + '%, rgba(255,255,255,.06) ' + score + '% 100%);display:grid;place-items:center;position:relative;box-shadow:var(--glow);flex-shrink:0">' +
           '<div style="width:118px;height:118px;border-radius:50%;background:var(--bg-1);position:absolute"></div>' +
           '<div style="position:relative;text-align:center"><div style="font-family:var(--disp);font-size:42px;color:var(--val);line-height:1">' + score + '</div><div style="font-size:10px;color:var(--faint)">dari 100</div></div></div>' +
-        '<div style="flex:1;min-width:200px"><div style="font-size:17px;font-weight:700;color:var(--gold-lt)">' + status + '</div><div style="font-size:12.5px;color:var(--soft);margin:5px 0 12px">' + statusDesc + '</div>' +
-          bar("Pembukuan", pembukuan) + bar("Kepatuhan", kepatuhan) + bar("Risiko", risiko) + "</div>" +
-        "</div></div>" +
+        '<div style="flex:1;min-width:200px"><div style="font-size:17px;font-weight:700;color:var(--gold-lt)">' + status + badge + '</div><div style="font-size:12.5px;color:var(--soft);margin:5px 0 12px">' + statusDesc + '</div>' +
+          bar("Pembukuan", pembukuan) + bar("Profil Pajak", profil) + bar("Ketepatan", ketepatan) + "</div>" +
+        "</div>" +
+        '<div style="padding:0 24px 18px"><div style="font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Riwayat kepatuhan 6 masa terakhir</div>' + histBar + "</div></div>" +
         '<div class="card"><div class="card-h"><h3>Rekomendasi</h3><span class="hint">tingkatkan skor</span></div><div style="padding:8px 4px">' +
           tips.map(function (t) { return '<div class="orow"><div class="oi inc"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div><div class="ot" style="font-weight:500;font-size:13px;color:var(--soft);line-height:1.5">' + esc(t) + "</div></div></div>"; }).join("") +
         "</div></div></div></div>";
@@ -655,10 +787,15 @@
       var k = Object.keys(o); if (!k.length) return '<tr><td style="color:var(--faint)">' + fallback + '</td><td style="text-align:right;font-family:var(--mono);color:var(--faint)">' + rp(0) + "</td></tr>";
       return k.map(function (c) { return '<tr><td><span class="m">' + esc(c) + '</span></td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(o[c]) + "</td></tr>"; }).join("");
     }
+    var bt = bizType(), s = A.S.stock || { awal: 0, akhir: 0 };
     var aset = '<tr><td><span class="m">Kas &amp; Setara Kas</span></td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(m.laba) + "</td></tr>";
-    var inner = '<div class="content"><div class="phead"><div><div class="pt">Account Architecture</div><div class="ps">Struktur akun (COA) &amp; saldo dari pembukuan Anda — SAK EMKM.</div></div></div>' +
+    var asetTot = m.laba;
+    if (HPP_CATS[bt]) { aset += '<tr><td><span class="m">' + (bt === "manufaktur" ? "Persediaan (BB + Barang Jadi)" : "Persediaan Barang Dagang") + '</span></td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(s.akhir) + "</td></tr>"; asetTot += s.akhir; }
+    var totAsetAset = (A.S.assets || []).reduce(function (a, x) { var acc = Math.round(depMonthly(x) * depMonths(x)); return a + Math.max(x.cost - acc, x.salvage || 0); }, 0);
+    if (totAsetAset) { aset += '<tr><td><span class="m">Aset Tetap (nilai buku)</span></td><td style="text-align:right;font-family:var(--mono);color:var(--val)">' + rp(totAsetAset) + "</td></tr>"; asetTot += totAsetAset; }
+    var inner = '<div class="content"><div class="phead"><div><div class="pt">Account Architecture</div><div class="ps">Struktur akun (COA) format <b style="color:var(--gold-lt)">' + bt + '</b> &amp; saldo dari pembukuan — SAK EMKM.</div></div></div>' +
       '<div class="grid2" style="align-items:start"><div>' +
-        section("Aset", "1-xxxx", aset, m.laba, "var(--gold-lt)") +
+        section("Aset", "1-xxxx", aset, asetTot, "var(--gold-lt)") +
         section("Pendapatan", "4-xxxx", rowsFrom(incCats, "Belum ada pendapatan"), m.inc, "var(--pos)") +
       "</div><div>" +
         section("Beban", "5-xxxx", rowsFrom(expCats, "Belum ada beban"), m.exp, "var(--neg)") +
@@ -1256,7 +1393,7 @@
   function poReceive(id) {
     var x = byId(A.S.purchases, id); if (!x) return;
     x.status = "diterima";
-    if (!x.posted) { A.S.tx.push({ id: uid(), date: new Date().toISOString().slice(0, 10), kind: "exp", cat: "Pembelian", note: "PO " + x.no + " — " + x.vendor, amount: x.total }); x.posted = true; }
+    if (!x.posted) { var poCat = bizType() === "dagang" ? "Pembelian Barang Dagang" : (bizType() === "manufaktur" ? "Bahan Baku" : "Pembelian"); A.S.tx.push({ id: uid(), date: new Date().toISOString().slice(0, 10), kind: "exp", cat: poCat, note: "PO " + x.no + " — " + x.vendor, amount: x.total }); x.posted = true; }
     save(); toast("✓ PO diterima — beban tercatat otomatis"); render();
   }
   function viewPO() {
@@ -1571,12 +1708,13 @@
   function showAccount() {
     modal(MBRAND + '<button class="mx" id="x">×</button><div class="mh">Akun</div>' +
       '<div class="msub">' + esc(A.user && A.user.email || "") + '<br>Perusahaan: <b style="color:var(--ink)">' + esc(A.company.name) + '</b><br>Paket: <b style="color:var(--gold-lt)">' + esc((A.plan && A.plan.name) || "-") + "</b></div>" +
-      '<button class="mbtn pri" id="up">Lihat paket / upgrade</button><button class="mbtn ghost" id="thm">Tema: ' + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙") + '</button><button class="mbtn ghost" id="brand">Logo &amp; Branding</button><button class="mbtn ghost" id="cpwd">Ganti kata sandi</button><button class="mbtn ghost" id="bkup">Backup data (JSON)</button><button class="mbtn ghost" id="rstr">Pulihkan dari backup</button><input type="file" id="rstrF" accept=".json,application/json" style="display:none"><button class="mbtn ghost" id="sy">Sinkron sekarang</button><button class="mbtn ghost" id="out">Keluar</button>');
+      '<button class="mbtn pri" id="up">Lihat paket / upgrade</button><button class="mbtn ghost" id="thm">Tema: ' + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙") + '</button><button class="mbtn ghost" id="brand">Logo &amp; Branding</button><button class="mbtn ghost" id="txst">Status pajak: ' + (taxStatus() ? TAXSTAT_LBL[taxStatus()] : "belum diatur") + '</button><button class="mbtn ghost" id="cpwd">Ganti kata sandi</button><button class="mbtn ghost" id="bkup">Backup data (JSON)</button><button class="mbtn ghost" id="rstr">Pulihkan dari backup</button><input type="file" id="rstrF" accept=".json,application/json" style="display:none"><button class="mbtn ghost" id="sy">Sinkron sekarang</button><button class="mbtn ghost" id="out">Keluar</button>');
     $("#x").onclick = closeModal;
     $("#up").onclick = showPlans;
     $("#thm").onclick = function () { toggleTheme(); $("#thm").textContent = "Tema: " + (document.documentElement.getAttribute("data-theme") === "light" ? "Terang ☀️" : "Gelap 🌙"); };
     $("#brand").onclick = function () { closeModal(); showBranding(); };
     $("#cpwd").onclick = function () { showSetPassword(false); };
+    $("#txst").onclick = function () { closeModal(); showTaxStatus(); };
     $("#bkup").onclick = function () {
       var payload = { app: "FinFlow", version: 1, company: (A.company || {}).name || "", exported: new Date().toISOString(), state: A.S };
       download("finflow-backup-" + ((A.company || {}).name || "data").replace(/\W+/g, "-").toLowerCase() + "-" + new Date().toISOString().slice(0, 10) + ".json", JSON.stringify(payload, null, 2), "application/json;charset=utf-8");
